@@ -2,7 +2,7 @@
 /**
  * Plugin Name: کارثبت | هسته سامانه
  * Description: مدیریت درخواست‌های خدمات کارثبت و فرم ثبت سفارش امن.
- * Version: 0.4.1
+ * Version: 0.5.0
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Karsabt
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('KARSABT_CORE_VERSION', '0.4.1');
+define('KARSABT_CORE_VERSION', '0.5.0');
 
 function karsabt_core_enqueue_styles() {
     wp_enqueue_style('karsabt-core-forms', plugin_dir_url(__FILE__) . 'assets/css/forms.css', array(), KARSABT_CORE_VERSION);
@@ -203,6 +203,9 @@ function karsabt_core_submit_order() {
     update_post_meta($order_id, '_karsabt_customer_phone', $phone);
     update_post_meta($order_id, '_karsabt_service', $service);
     update_post_meta($order_id, '_karsabt_customer_message', $message);
+    if (is_user_logged_in()) {
+        update_post_meta($order_id, '_karsabt_customer_user_id', get_current_user_id());
+    }
     update_post_meta($order_id, '_karsabt_order_status', 'new');
     update_post_meta($order_id, '_karsabt_tracking_code', karsabt_core_generate_tracking_code($order_id));
     update_post_meta($order_id, '_karsabt_status_history', array(
@@ -287,6 +290,56 @@ function karsabt_core_order_tracking() {
     return ob_get_clean();
 }
 add_shortcode('karsabt_order_tracking', 'karsabt_core_order_tracking');
+
+
+/**
+ * پنل خصوصی مشتری؛ فقط درخواست‌هایی که به حساب کاربری واردشده متصل شده‌اند.
+ */
+function karsabt_core_customer_dashboard() {
+    if (!is_user_logged_in()) {
+        $login_url = wp_login_url(get_permalink());
+        return '<div class="karsabt-form-notice">برای مشاهده درخواست‌های خود ابتدا <a href="' . esc_url($login_url) . '">وارد حساب کاربری</a> شوید.</div>';
+    }
+
+    $orders = get_posts(array(
+        'post_type'      => 'karsabt_order',
+        'post_status'    => 'private',
+        'posts_per_page' => 50,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'meta_query'     => array(
+            array(
+                'key'     => '_karsabt_customer_user_id',
+                'value'   => (string) get_current_user_id(),
+                'compare' => '=',
+            ),
+        ),
+        'no_found_rows'  => true,
+    ));
+
+    ob_start();
+    if (!$orders) {
+        echo '<p class="karsabt-form-notice">هنوز درخواستی به حساب کاربری شما متصل نشده است.</p>';
+    } else {
+        echo '<div class="karsabt-customer-dashboard"><div class="karsabt-dashboard-table-wrap"><table class="karsabt-dashboard-table"><thead><tr><th>کد پیگیری</th><th>خدمت</th><th>وضعیت</th><th>تاریخ ثبت</th></tr></thead><tbody>';
+        foreach ($orders as $order) {
+            $tracking = get_post_meta($order->ID, '_karsabt_tracking_code', true);
+            $service = get_post_meta($order->ID, '_karsabt_service', true);
+            $status = get_post_meta($order->ID, '_karsabt_order_status', true);
+            $services = karsabt_core_services();
+            $statuses = karsabt_core_statuses();
+            echo '<tr>';
+            echo '<td><bdi>' . esc_html($tracking ? $tracking : '—') . '</bdi></td>';
+            echo '<td>' . esc_html(isset($services[$service]) ? $services[$service] : '—') . '</td>';
+            echo '<td>' . esc_html(isset($statuses[$status]) ? $statuses[$status] : 'در حال بررسی') . '</td>';
+            echo '<td>' . esc_html(get_the_date('Y/m/d', $order)) . '</td>';
+            echo '</tr>';
+        }
+        echo '</tbody></table></div></div>';
+    }
+    return ob_get_clean();
+}
+add_shortcode('karsabt_customer_dashboard', 'karsabt_core_customer_dashboard');
 
 function karsabt_core_generate_tracking_code($order_id) {
     return 'KRS-' . gmdate('ym') . '-' . str_pad((string) $order_id, 6, '0', STR_PAD_LEFT) . '-' . strtoupper(wp_generate_password(4, false, false));
