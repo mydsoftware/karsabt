@@ -34,3 +34,14 @@ function karsabt_notify_order_created($order_id) {
     $tracking = get_post_meta($order_id, '_karsabt_tracking_code', true);
     karsabt_notify_sms($mobile, 'درخواست شما در کارثبت ثبت شد. کد پیگیری: ' . $tracking, 'order_created', array('order_id' => $order_id));
 }
+
+/** اعلان وضعیت جدید بدون افشای جزئیات پرونده. */
+function karsabt_notify_order_status_changed($order_id, $old_status, $new_status) {
+    $mobile = get_post_meta($order_id, '_karsabt_customer_phone', true);
+    $tracking = get_post_meta($order_id, '_karsabt_tracking_code', true);
+    $labels = function_exists('karsabt_core_statuses') ? karsabt_core_statuses() : array();
+    $label = isset($labels[$new_status]) ? $labels[$new_status] : 'به‌روزرسانی‌شده';
+    karsabt_notify_sms($mobile, 'وضعیت درخواست ' . $tracking . ' در کارثبت تغییر کرد: ' . $label, 'order_status_changed', array('order_id' => $order_id));
+}
+add_action('karsabt_order_created', 'karsabt_notify_order_created', 10, 1);
+add_action('karsabt_order_status_changed', 'karsabt_notify_order_status_changed', 10, 3);
