@@ -116,9 +116,19 @@ function karsabt_core_render_customer_admin_page() {
         'count_total' => true,
     );
     if ('' !== $search) {
-        $args['search'] = '*' . $search . '*';
-        $args['search_columns'] = array('user_login', 'user_email', 'display_name');
-        $args['meta_query'] = array(array('key' => '_karsabt_mobile', 'value' => $search, 'compare' => 'LIKE'));
+        // جست‌وجوی شماره از جست‌وجوی نام/ایمیل جداست؛ WP_User_Query
+        // شرط search و meta_query را با AND ترکیب می‌کند.
+        if (preg_match('/^[0-9۰-۹٠-٩+()\\s-]+$/u', $search)) {
+            $mobile_search = karsabt_core_normalize_mobile($search);
+            $args['meta_query'] = array(array(
+                'key' => '_karsabt_mobile',
+                'value' => $mobile_search ? $mobile_search : preg_replace('/\\s+/', '', $search),
+                'compare' => 'LIKE',
+            ));
+        } else {
+            $args['search'] = '*' . $search . '*';
+            $args['search_columns'] = array('user_login', 'user_email', 'display_name');
+        }
     }
     $query = new WP_User_Query($args);
     $customers = $query->get_results();
