@@ -211,6 +211,7 @@ function karsabt_core_submit_order() {
     update_post_meta($order_id, '_karsabt_status_history', array(
         array('status' => 'new', 'label' => 'جدید', 'time' => current_time('mysql'), 'user_id' => 0),
     ));
+    do_action('karsabt_order_created', $order_id);
 
     $receipt_token = wp_generate_password(32, false, false);
     set_transient('karsabt_receipt_' . $receipt_token, get_post_meta($order_id, '_karsabt_tracking_code', true), 10 * MINUTE_IN_SECONDS);
@@ -596,6 +597,7 @@ function karsabt_core_save_order_meta($post_id) {
         $history = is_array($history) ? $history : array();
         $history[] = array('status' => $status, 'label' => $statuses[$status], 'time' => current_time('mysql'), 'user_id' => get_current_user_id());
         update_post_meta($post_id, '_karsabt_status_history', $history);
+        do_action('karsabt_order_status_changed', $post_id, $old_status, $status);
     }
 
     if (isset($_POST['karsabt_internal_note'])) {
@@ -660,3 +662,4 @@ require_once __DIR__ . '/includes/admin-finance.php';
 require_once __DIR__ . '/includes/class-karsabt-documents.php';
 
 require_once __DIR__ . '/includes/class-karsabt-messages.php';
+require_once __DIR__ . '/includes/class-karsabt-notifications.php';
