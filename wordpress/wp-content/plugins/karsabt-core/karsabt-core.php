@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('KARSABT_CORE_VERSION', '0.2.0');
+define('KARSABT_CORE_VERSION', '0.3.0');
 
 function karsabt_core_enqueue_styles() {
     wp_enqueue_style('karsabt-core-forms', plugin_dir_url(__FILE__) . 'assets/css/forms.css', array(), KARSABT_CORE_VERSION);
@@ -194,11 +194,19 @@ function karsabt_core_submit_order() {
     update_post_meta($order_id, '_karsabt_service', $service);
     update_post_meta($order_id, '_karsabt_customer_message', $message);
     update_post_meta($order_id, '_karsabt_order_status', 'new');
+    update_post_meta($order_id, '_karsabt_tracking_code', karsabt_core_generate_tracking_code($order_id));
+    update_post_meta($order_id, '_karsabt_status_history', array(
+        array('status' => 'new', 'label' => 'جدید', 'time' => current_time('mysql'), 'user_id' => 0),
+    ));
 
     karsabt_core_redirect_form('success');
 }
 add_action('admin_post_nopriv_karsabt_submit_order', 'karsabt_core_submit_order');
 add_action('admin_post_karsabt_submit_order', 'karsabt_core_submit_order');
+
+function karsabt_core_generate_tracking_code($order_id) {
+    return 'KRS-' . gmdate('ym') . '-' . str_pad((string) $order_id, 6, '0', STR_PAD_LEFT) . '-' . strtoupper(wp_generate_password(4, false, false));
+}
 
 function karsabt_core_add_order_meta_box() {
     add_meta_box(
@@ -221,8 +229,14 @@ function karsabt_core_render_order_meta_box($post) {
     $message = get_post_meta($post->ID, '_karsabt_customer_message', true);
     $status = get_post_meta($post->ID, '_karsabt_order_status', true);
     $statuses = karsabt_core_statuses();
+    $tracking_code = get_post_meta($post->ID, '_karsabt_tracking_code', true);
+    $history = get_post_meta($post->ID, '_karsabt_status_history', true);
+    $history = is_array($history) ? $history : array();
+    $notes = get_post_meta($post->ID, '_karsabt_internal_notes', true);
+    $notes = is_array($notes) ? $notes : array();
     ?>
     <table class="form-table">
+        <tr><th>کد پیگیری</th><td><strong><?php echo esc_html($tracking_code ? $tracking_code : 'برای درخواست قدیمی ثبت نشده'); ?></strong></td></tr>
         <tr><th>نام مشتری</th><td><?php echo esc_html($name); ?></td></tr>
         <tr><th>شماره تماس</th><td><a href="<?php echo esc_url('tel:' . preg_replace('/[^0-9+]/', '', $phone)); ?>"><?php echo esc_html($phone); ?></a></td></tr>
         <tr><th>خدمت</th><td><?php echo esc_html(isset(karsabt_core_services()[$service]) ? karsabt_core_services()[$service] : '—'); ?></td></tr>
@@ -238,6 +252,27 @@ function karsabt_core_render_order_meta_box($post) {
             </td>
         </tr>
     </table>
+    <hr>
+    <h3>تاریخچه وضعیت درخواست</h3>
+    <?php if ($history) : ?>
+        <ol>
+            <?php foreach (array_reverse($history) as $event) : ?>
+                <li><?php echo esc_html(isset($event['label']) ? $event['label'] : 'وضعیت'); ?> — <?php echo esc_html(isset($event['time']) ? $event['time'] : ''); ?></li>
+            <?php endforeach; ?>
+        </ol>
+    <?php else : ?><p>تاریخچه‌ای ثبت نشده است.</p><?php endif; ?>
+    <hr>
+    <h3>یادداشت‌های داخلی (فقط مدیران)</h3>
+    <?php if ($notes) : ?>
+        <ul>
+            <?php foreach (array_reverse($notes) as $note) : ?>
+                <li><strong><?php echo esc_html(isset($note['author']) ? $note['author'] : 'مدیر'); ?></strong> — <?php echo esc_html(isset($note['time']) ? $note['time'] : ''); ?><br><?php echo nl2br(esc_html(isset($note['text']) ? $note['text'] : '')); ?></li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+    <p><label for="karsabt-internal-note">افزودن یادداشت جدید</label></p>
+    <textarea id="karsabt-internal-note" name="karsabt_internal_note" rows="3" maxlength="2000" class="widefat"></textarea>
+    <p class="description">این یادداشت به مشتری نمایش داده نمی‌شود.</p>
     <?php
 }
 
@@ -254,8 +289,28 @@ function karsabt_core_save_order_meta($post_id) {
     $status = isset($_POST['karsabt_order_status']) ? sanitize_key(wp_unslash($_POST['karsabt_order_status'])) : 'new';
     $statuses = karsabt_core_statuses();
 
-    if (isset($statuses[$status])) {
+    $old_status = get_post_meta($post_id, '_karsabt_order_status', true);
+    if (isset($statuses[$status]) && $status !== $old_status) {
         update_post_meta($post_id, '_karsabt_order_status', $status);
+        $history = get_post_meta($post_id, '_karsabt_status_history', true);
+        $history = is_array($history) ? $history : array();
+        $history[] = array('status' => $status, 'label' => $statuses[$status], 'time' => current_time('mysql'), 'user_id' => get_current_user_id());
+        update_post_meta($post_id, '_karsabt_status_history', $history);
+    }
+
+    if (isset($_POST['karsabt_internal_note'])) {
+        $note_text = sanitize_textarea_field(wp_unslash($_POST['karsabt_internal_note']));
+        if ('' !== trim($note_text) && strlen($note_text) <= 8000) {
+            $notes = get_post_meta($post_id, '_karsabt_internal_notes', true);
+            $notes = is_array($notes) ? $notes : array();
+            $user = wp_get_current_user();
+            $notes[] = array('text' => $note_text, 'author' => $user->display_name, 'user_id' => get_current_user_id(), 'time' => current_time('mysql'));
+            update_post_meta($post_id, '_karsabt_internal_notes', $notes);
+        }
+    }
+
+    if (!get_post_meta($post_id, '_karsabt_tracking_code', true)) {
+        update_post_meta($post_id, '_karsabt_tracking_code', karsabt_core_generate_tracking_code($post_id));
     }
 }
 add_action('save_post_karsabt_order', 'karsabt_core_save_order_meta');
@@ -263,7 +318,7 @@ add_action('save_post_karsabt_order', 'karsabt_core_save_order_meta');
 function karsabt_core_order_columns($columns) {
     return array(
         'cb'       => isset($columns['cb']) ? $columns['cb'] : '',
-        'title'    => 'شناسه درخواست',
+        'title'    => 'کد / شناسه درخواست',
         'service'  => 'خدمت',
         'customer' => 'مشتری',
         'phone'    => 'شماره تماس',
@@ -274,7 +329,13 @@ function karsabt_core_order_columns($columns) {
 add_filter('manage_karsabt_order_posts_columns', 'karsabt_core_order_columns');
 
 function karsabt_core_order_column_content($column, $post_id) {
-    if ('service' === $column) {
+    if ('title' === $column) {
+        $tracking_code = get_post_meta($post_id, '_karsabt_tracking_code', true);
+        if ($tracking_code) {
+            echo '<strong>' . esc_html($tracking_code) . '</strong><br>';
+        }
+        echo '<a href="' . esc_url(get_edit_post_link($post_id)) . '">مشاهده جزئیات</a>';
+    } elseif ('service' === $column) {
         $service = get_post_meta($post_id, '_karsabt_service', true);
         $services = karsabt_core_services();
         echo esc_html(isset($services[$service]) ? $services[$service] : '—');
