@@ -59,6 +59,13 @@ function karsabt_staff_render_dashboard() {
     );
     if ($search !== '') {
         $args['s'] = $search;
+        $meta_query[] = array(
+            'relation' => 'OR',
+            array('key' => '_karsabt_customer_name', 'value' => $search, 'compare' => 'LIKE'),
+            array('key' => '_karsabt_customer_phone', 'value' => $search, 'compare' => 'LIKE'),
+            array('key' => '_karsabt_tracking_code', 'value' => strtoupper($search), 'compare' => 'LIKE'),
+        );
+        $args['meta_query'] = $meta_query;
     }
     $orders = new WP_Query($args);
 
