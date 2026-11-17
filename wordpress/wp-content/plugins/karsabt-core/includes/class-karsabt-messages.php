@@ -65,6 +65,11 @@ function karsabt_messages_customer_submit() {
         (int) get_post_meta($order_id, '_karsabt_customer_user_id', true) !== get_current_user_id()) {
         wp_die('دسترسی به این درخواست مجاز نیست.', '', array('response' => 403));
     }
+    $rate_key = 'karsabt_msg_rate_' . get_current_user_id();
+    $sent_count = (int) get_transient($rate_key);
+    if ($sent_count >= 20) {
+        wp_die('سقف ارسال پیام در یک ساعت تکمیل شده است.', '', array('response' => 429));
+    }
     $text = isset($_POST['message']) ? trim(sanitize_textarea_field(wp_unslash($_POST['message']))) : '';
     if ('' === $text || strlen($text) > 8000) {
         wp_die('متن پیام خالی یا بیش از حد طولانی است.', '', array('response' => 400));
@@ -79,6 +84,7 @@ function karsabt_messages_customer_submit() {
         'time' => current_time('mysql'),
     );
     update_post_meta($order_id, '_karsabt_messages', $messages);
+    set_transient($rate_key, $sent_count + 1, HOUR_IN_SECONDS);
     wp_safe_redirect(wp_get_referer() ?: home_url('/'));
     exit;
 }
