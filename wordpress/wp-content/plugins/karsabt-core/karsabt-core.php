@@ -13,7 +13,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('KARSABT_CORE_VERSION', '0.1.0');
+define('KARSABT_CORE_VERSION', '0.1.1');
+
+function karsabt_core_enqueue_styles() {
+    wp_enqueue_style('karsabt-core-forms', plugin_dir_url(__FILE__) . 'assets/css/forms.css', array(), KARSABT_CORE_VERSION);
+}
+add_action('wp_enqueue_scripts', 'karsabt_core_enqueue_styles');
 
 function karsabt_core_register_order_type() {
     $labels = array(
@@ -105,7 +110,7 @@ function karsabt_core_order_form() {
             <label for="karsabt-order-message">توضیحات (اختیاری)</label>
             <textarea id="karsabt-order-message" name="customer_message" rows="4" maxlength="2000"></textarea>
         </p>
-        <p class="karsabt-honeypot" aria-hidden="true">
+        <p class="karsabt-honeypot" aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden">
             <label for="karsabt-website">این قسمت را خالی بگذارید</label>
             <input id="karsabt-website" name="website" type="text" tabindex="-1" autocomplete="off">
         </p>
@@ -137,7 +142,7 @@ function karsabt_core_submit_order() {
 
     // فیلد مخفی ضد هرزنامه؛ پر بودن آن باعث رد بی‌سروصدای درخواست می‌شود.
     if (!empty($_POST['website'])) {
-        karsabt_core_redirect_form('success');
+        karsabt_core_redirect_form('invalid');
     }
 
     $name = isset($_POST['customer_name']) ? sanitize_text_field(wp_unslash($_POST['customer_name'])) : '';
