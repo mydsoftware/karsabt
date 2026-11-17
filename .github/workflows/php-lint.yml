@@ -1,0 +1,33 @@
+name: بررسی نحو PHP
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+      - 'fix/**'
+  pull_request:
+
+jobs:
+  php-lint:
+    name: بررسی خطای نحوی PHP
+    runs-on: ubuntu-latest
+    steps:
+      - name: دریافت کد
+        uses: actions/checkout@v4
+      - name: راه‌اندازی PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: بررسی همه فایل‌های PHP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' files < <(find wordpress -type f -name '*.php' -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No PHP files found."
+            exit 1
+          fi
+          for file in "${files[@]}"; do
+            php -l "$file"
+          done
