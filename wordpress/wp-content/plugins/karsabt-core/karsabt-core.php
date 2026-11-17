@@ -90,6 +90,16 @@ function karsabt_core_statuses() {
 function karsabt_core_order_form() {
     $result = isset($_GET['karsabt_order']) ? sanitize_key(wp_unslash($_GET['karsabt_order'])) : '';
     $notice = '';
+    if (isset($_GET['karsabt_receipt'])) {
+        $receipt_token = sanitize_text_field(wp_unslash($_GET['karsabt_receipt']));
+        if (preg_match('/^[A-Za-z0-9]{32}$/', $receipt_token)) {
+            $receipt_code = get_transient('karsabt_receipt_' . $receipt_token);
+            if ($receipt_code) {
+                delete_transient('karsabt_receipt_' . $receipt_token);
+                $notice = '<div class="karsabt-form-notice karsabt-form-success" role="status"><p>درخواست شما با موفقیت ثبت شد. کد پیگیری را یادداشت کنید:</p><p><strong>' . esc_html($receipt_code) . '</strong></p><p>برای مشاهده وضعیت، از صفحه پیگیری درخواست استفاده کنید.</p></div>';
+            }
+        }
+    }
 
     if ('success' === $result) {
         $notice = '<p class="karsabt-form-notice karsabt-form-success" role="status">درخواست شما با موفقیت ثبت شد. برای پیگیری، اطلاعات تماس خود را در دسترس نگه دارید.</p>';
@@ -199,7 +209,12 @@ function karsabt_core_submit_order() {
         array('status' => 'new', 'label' => 'جدید', 'time' => current_time('mysql'), 'user_id' => 0),
     ));
 
-    karsabt_core_redirect_form('success');
+    $receipt_token = wp_generate_password(32, false, false);
+    set_transient('karsabt_receipt_' . $receipt_token, get_post_meta($order_id, '_karsabt_tracking_code', true), 10 * MINUTE_IN_SECONDS);
+    $referer = wp_get_referer();
+    $receipt_url = $referer ? remove_query_arg(array('karsabt_order', 'karsabt_receipt'), $referer) : home_url('/');
+    wp_safe_redirect(add_query_arg('karsabt_receipt', rawurlencode($receipt_token), $receipt_url) . '#contact');
+    exit;
 }
 add_action('admin_post_nopriv_karsabt_submit_order', 'karsabt_core_submit_order');
 add_action('admin_post_karsabt_submit_order', 'karsabt_core_submit_order');
