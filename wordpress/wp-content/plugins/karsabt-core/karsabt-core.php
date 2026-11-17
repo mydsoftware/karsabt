@@ -45,27 +45,64 @@ function karsabt_core_register_order_type() {
         'show_in_rest'        => false,
         'menu_icon'           => 'dashicons-clipboard',
         'supports'            => array('title'),
-        'capability_type'     => 'post',
+        'capability_type'     => array('karsabt_order', 'karsabt_orders'),
         'map_meta_cap'        => true,
         'capabilities'        => array(
-            'edit_post'              => 'manage_options',
-            'read_post'              => 'manage_options',
-            'delete_post'            => 'manage_options',
-            'edit_posts'             => 'manage_options',
-            'edit_others_posts'      => 'manage_options',
-            'publish_posts'          => 'manage_options',
-            'read_private_posts'     => 'manage_options',
-            'delete_posts'           => 'manage_options',
-            'delete_private_posts'   => 'manage_options',
-            'delete_published_posts' => 'manage_options',
-            'delete_others_posts'    => 'manage_options',
-            'edit_private_posts'     => 'manage_options',
-            'edit_published_posts'   => 'manage_options',
-            'create_posts'           => 'manage_options',
+            'edit_post'              => 'edit_karsabt_order',
+            'read_post'              => 'read_karsabt_order',
+            'delete_post'            => 'delete_karsabt_order',
+            'edit_posts'             => 'edit_karsabt_orders',
+            'edit_others_posts'      => 'edit_others_karsabt_orders',
+            'publish_posts'          => 'publish_karsabt_orders',
+            'read_private_posts'     => 'read_private_karsabt_orders',
+            'delete_posts'           => 'delete_karsabt_orders',
+            'delete_private_posts'   => 'delete_private_karsabt_orders',
+            'delete_published_posts' => 'delete_published_karsabt_orders',
+            'delete_others_posts'    => 'delete_others_karsabt_orders',
+            'edit_private_posts'     => 'edit_private_karsabt_orders',
+            'edit_published_posts'   => 'edit_published_karsabt_orders',
+            'create_posts'           => 'do_not_allow',
         ),
     ));
 }
 add_action('init', 'karsabt_core_register_order_type');
+
+function karsabt_core_register_staff_role() {
+    $caps = array('read' => true, 'edit_karsabt_orders' => true, 'read_private_karsabt_orders' => true);
+    $role = get_role('karsabt_case_worker');
+    if (!$role) {
+        add_role('karsabt_case_worker', 'کارشناس کارثبت', $caps);
+    } else {
+        foreach ($caps as $cap => $grant) { $role->add_cap($cap, $grant); }
+    }
+    $admin = get_role('administrator');
+    if ($admin) {
+        foreach (array('edit_karsabt_orders','edit_others_karsabt_orders','publish_karsabt_orders','read_private_karsabt_orders','delete_karsabt_orders','delete_private_karsabt_orders','delete_published_karsabt_orders','delete_others_karsabt_orders','edit_private_karsabt_orders','edit_published_karsabt_orders') as $cap) {
+            $admin->add_cap($cap);
+        }
+    }
+}
+add_action('init', 'karsabt_core_register_staff_role', 20);
+
+function karsabt_core_staff_order_caps($caps, $cap, $user_id, $args) {
+    if (!in_array($cap, array('edit_karsabt_order','read_karsabt_order','delete_karsabt_order'), true) || empty($args[0])) { return $caps; }
+    if (user_can($user_id, 'manage_options')) { return array('manage_options'); }
+    $order_id = absint($args[0]);
+    $assigned = absint(get_post_meta($order_id, '_karsabt_assigned_user_id', true));
+    if ($assigned && $assigned === (int) $user_id && user_can($user_id, 'edit_karsabt_orders')) {
+        return ('delete_karsabt_order' === $cap) ? array('do_not_allow') : array('edit_karsabt_orders');
+    }
+    return array('do_not_allow');
+}
+add_filter('map_meta_cap', 'karsabt_core_staff_order_caps', 10, 4);
+
+function karsabt_core_limit_staff_order_list($query) {
+    if (!is_admin() || !$query->is_main_query() || 'karsabt_order' !== $query->get('post_type') || current_user_can('manage_options')) { return; }
+    $query->set('meta_query', array_merge((array) $query->get('meta_query'), array(array(
+        'key' => '_karsabt_assigned_user_id', 'value' => get_current_user_id(), 'compare' => '=', 'type' => 'NUMERIC'
+    ))));
+}
+add_action('pre_get_posts', 'karsabt_core_limit_staff_order_list', 20);
 
 function karsabt_core_services() {
     return array(
