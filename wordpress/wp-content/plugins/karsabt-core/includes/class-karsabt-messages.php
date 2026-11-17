@@ -84,6 +84,7 @@ function karsabt_messages_customer_submit() {
         'time' => current_time('mysql'),
     );
     update_post_meta($order_id, '_karsabt_messages', $messages);
+    do_action('karsabt_customer_message_created', $order_id);
     set_transient($rate_key, $sent_count + 1, HOUR_IN_SECONDS);
     wp_safe_redirect(wp_get_referer() ?: home_url('/'));
     exit;
@@ -110,6 +111,11 @@ function karsabt_messages_admin_page() {
                     'time' => current_time('mysql'),
                 );
                 update_post_meta($order_id, '_karsabt_messages', $messages);
+                $mobile = get_post_meta($order_id, '_karsabt_customer_phone', true);
+                $tracking = get_post_meta($order_id, '_karsabt_tracking_code', true);
+                if (function_exists('karsabt_notify_sms')) {
+                    karsabt_notify_sms($mobile, 'پاسخ جدیدی برای درخواست ' . $tracking . ' در پنل کارثبت ثبت شد.', 'admin_replied', array('order_id' => $order_id));
+                }
                 $notice = '<div class="notice notice-success"><p>پاسخ ثبت شد.</p></div>';
             } else {
                 $notice = '<div class="notice notice-error"><p>ظرفیت گفت‌وگو تکمیل شده است.</p></div>';
