@@ -2,7 +2,7 @@
 /**
  * Plugin Name: کارثبت | هسته سامانه
  * Description: مدیریت درخواست‌های خدمات کارثبت و فرم ثبت سفارش امن.
- * Version: 0.7.0
+ * Version: 0.8.0
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Karsabt
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('KARSABT_CORE_VERSION', '0.7.0');
+define('KARSABT_CORE_VERSION', '0.8.0');
 
 function karsabt_core_enqueue_styles() {
     wp_enqueue_style('karsabt-core-forms', plugin_dir_url(__FILE__) . 'assets/css/forms.css', array(), KARSABT_CORE_VERSION);
@@ -326,6 +326,10 @@ function karsabt_core_auth_rate_limited() {
  * فرم ثبت‌نام و ورود با شماره موبایل و گذرواژه وردپرس.
  * این نسخه پیامک/رمز یک‌بارمصرف ارسال نمی‌کند و شماره موبایل را تأییدشده تلقی نمی‌کند.
  */
+/**
+ * ورود و ثبت‌نام مشتری با رمز یک‌بارمصرف.
+ * ارسال واقعی فقط با اتصال ماژول پیامک به فیلتر karsabt_send_otp فعال می‌شود.
+ */
 function karsabt_core_customer_auth() {
     if (is_user_logged_in()) {
         return '<div class="karsabt-form-notice karsabt-form-success">وارد حساب کاربری خود شده‌اید. <a href="' . esc_url(wp_logout_url(get_permalink())) . '">خروج از حساب</a></div>';
@@ -335,52 +339,75 @@ function karsabt_core_customer_auth() {
     if ('POST' === strtoupper(isset($_SERVER['REQUEST_METHOD']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])) : '')) {
         $nonce = isset($_POST['karsabt_auth_nonce']) ? sanitize_text_field(wp_unslash($_POST['karsabt_auth_nonce'])) : '';
         $mode = isset($_POST['karsabt_auth_mode']) ? sanitize_key(wp_unslash($_POST['karsabt_auth_mode'])) : '';
-        if (!$nonce || !wp_verify_nonce($nonce, 'karsabt_customer_auth') || !in_array($mode, array('login', 'register'), true)) {
+        $allowed_modes = array('send_login', 'verify_login', 'send_register', 'verify_register');
+
+        if (!$nonce || !wp_verify_nonce($nonce, 'karsabt_customer_auth') || !in_array($mode, $allowed_modes, true)) {
             $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">درخواست معتبر نیست. صفحه را تازه‌سازی کنید.</p>';
         } elseif (karsabt_core_auth_rate_limited()) {
             $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">تعداد تلاش‌ها بیش از حد مجاز است. ۱۵ دقیقه دیگر دوباره تلاش کنید.</p>';
         } else {
             $mobile = isset($_POST['customer_mobile']) ? karsabt_core_normalize_mobile(wp_unslash($_POST['customer_mobile'])) : '';
-            $password = isset($_POST['customer_password']) ? (string) wp_unslash($_POST['customer_password']) : '';
-            if (!$mobile || strlen($password) < 10 || strlen($password) > 4096) {
-                $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">شماره موبایل یا گذرواژه معتبر نیست. گذرواژه باید حداقل ۱۰ نویسه داشته باشد.</p>';
-            } elseif ('register' === $mode) {
-                $name = isset($_POST['customer_full_name']) ? sanitize_text_field(wp_unslash($_POST['customer_full_name'])) : '';
-                $existing = get_users(array('meta_key' => '_karsabt_mobile', 'meta_value' => $mobile, 'number' => 1, 'fields' => 'ID'));
-                if ('' === $name || strlen($name) > 300) {
-                    $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">نام و نام خانوادگی را وارد کنید.</p>';
-                } elseif ($existing) {
-                    $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">ثبت‌نام با این شماره امکان‌پذیر نیست. اگر قبلاً حساب ساخته‌اید، وارد شوید.</p>';
+            if (!$mobile) {
+                $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">شماره موبایل معتبر نیست.</p>';
+            } elseif (0 === strpos($mode, 'send_')) {
+                $users = get_users(array('meta_key' => '_karsabt_mobile', 'meta_value' => $mobile, 'number' => 1, 'fields' => 'ID'));
+                if ('send_login' === $mode && !$users) {
+                    $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">حسابی با این شماره پیدا نشد. ابتدا ثبت‌نام کنید.</p>';
+                } elseif ('send_register' === $mode && $users) {
+                    $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">با این شماره قبلاً حساب ساخته شده است. از بخش ورود استفاده کنید.</p>';
                 } else {
-                    $login = 'krs_' . substr(hash('sha256', $mobile), 0, 24);
-                    $user_id = wp_insert_user(array(
-                        'user_login'   => $login,
-                        'user_pass'    => $password,
-                        'display_name' => $name,
-                        'nickname'     => $name,
-                        'role'         => 'subscriber',
-                    ));
-                    if (is_wp_error($user_id)) {
-                        $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">ساخت حساب انجام نشد. دوباره تلاش کنید.</p>';
+                    $sent = Karsabt_OTP_Service::send($mobile);
+                    if (is_wp_error($sent)) {
+                        $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">' . esc_html($sent->get_error_message()) . '</p>';
                     } else {
-                        update_user_meta($user_id, '_karsabt_mobile', $mobile);
-                        update_user_meta($user_id, '_karsabt_mobile_verified', '0');
-                        wp_set_current_user($user_id);
-                        wp_set_auth_cookie($user_id, true, is_ssl());
-                        wp_safe_redirect(remove_query_arg(array('karsabt_auth', 'karsabt_auth_error'), wp_get_referer() ? wp_get_referer() : get_permalink()));
-                        exit;
+                        $notice = '<p class="karsabt-form-notice karsabt-form-success" role="status">درخواست ارسال کد ثبت شد. اگر پیامک را دریافت کردید، کد را در فرم تأیید وارد کنید.</p>';
                     }
                 }
             } else {
-                $users = get_users(array('meta_key' => '_karsabt_mobile', 'meta_value' => $mobile, 'number' => 1));
-                $user = $users ? $users[0] : false;
-                if (!$user || !wp_check_password($password, $user->user_pass, $user->ID)) {
-                    $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">شماره موبایل یا گذرواژه اشتباه است.</p>';
+                $code = isset($_POST['customer_otp']) ? sanitize_text_field(wp_unslash($_POST['customer_otp'])) : '';
+                $verified = Karsabt_OTP_Service::verify($mobile, $code);
+                if (is_wp_error($verified)) {
+                    $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">' . esc_html($verified->get_error_message()) . '</p>';
+                } elseif ('verify_login' === $mode) {
+                    $users = get_users(array('meta_key' => '_karsabt_mobile', 'meta_value' => $mobile, 'number' => 1));
+                    $user = $users ? $users[0] : false;
+                    if (!$user) {
+                        $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">حساب کاربری پیدا نشد.</p>';
+                    } else {
+                        update_user_meta($user->ID, '_karsabt_mobile_verified', '1');
+                        wp_set_current_user($user->ID);
+                        wp_set_auth_cookie($user->ID, true, is_ssl());
+                        wp_safe_redirect(get_permalink());
+                        exit;
+                    }
                 } else {
-                    wp_set_current_user($user->ID);
-                    wp_set_auth_cookie($user->ID, true, is_ssl());
-                    wp_safe_redirect(remove_query_arg(array('karsabt_auth', 'karsabt_auth_error'), wp_get_referer() ? wp_get_referer() : get_permalink()));
-                    exit;
+                    $name = isset($_POST['customer_full_name']) ? sanitize_text_field(wp_unslash($_POST['customer_full_name'])) : '';
+                    $password = isset($_POST['customer_password']) ? (string) wp_unslash($_POST['customer_password']) : '';
+                    $users = get_users(array('meta_key' => '_karsabt_mobile', 'meta_value' => $mobile, 'number' => 1, 'fields' => 'ID'));
+                    if ($users) {
+                        $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">با این شماره قبلاً حساب ساخته شده است.</p>';
+                    } elseif ('' === $name || strlen($name) > 300 || strlen($password) < 10 || strlen($password) > 4096) {
+                        $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">نام را وارد کنید و گذرواژه‌ای با حداقل ۱۰ نویسه انتخاب کنید.</p>';
+                    } else {
+                        $login = 'krs_' . substr(hash('sha256', $mobile), 0, 24);
+                        $user_id = wp_insert_user(array(
+                            'user_login' => $login,
+                            'user_pass' => $password,
+                            'display_name' => $name,
+                            'nickname' => $name,
+                            'role' => 'subscriber',
+                        ));
+                        if (is_wp_error($user_id)) {
+                            $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">ساخت حساب انجام نشد. دوباره تلاش کنید.</p>';
+                        } else {
+                            update_user_meta($user_id, '_karsabt_mobile', $mobile);
+                            update_user_meta($user_id, '_karsabt_mobile_verified', '1');
+                            wp_set_current_user($user_id);
+                            wp_set_auth_cookie($user_id, true, is_ssl());
+                            wp_safe_redirect(get_permalink());
+                            exit;
+                        }
+                    }
                 }
             }
         }
@@ -390,24 +417,41 @@ function karsabt_core_customer_auth() {
     echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     ?>
     <div class="karsabt-customer-auth">
-        <form class="karsabt-order-form" method="post">
-            <?php echo wp_nonce_field('karsabt_customer_auth', 'karsabt_auth_nonce', true, false); ?>
-            <input type="hidden" name="karsabt_auth_mode" value="login">
-            <h3>ورود مشتریان</h3>
-            <p><label for="karsabt-login-mobile">شماره موبایل</label><input id="karsabt-login-mobile" name="customer_mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="09123456789" required></p>
-            <p><label for="karsabt-login-password">گذرواژه</label><input id="karsabt-login-password" name="customer_password" type="password" autocomplete="current-password" minlength="10" required></p>
-            <button type="submit">ورود</button>
-        </form>
-        <form class="karsabt-order-form" method="post">
-            <?php echo wp_nonce_field('karsabt_customer_auth', 'karsabt_auth_nonce', true, false); ?>
-            <input type="hidden" name="karsabt_auth_mode" value="register">
-            <h3>ایجاد حساب مشتری</h3>
-            <p><label for="karsabt-register-name">نام و نام خانوادگی</label><input id="karsabt-register-name" name="customer_full_name" type="text" maxlength="100" autocomplete="name" required></p>
-            <p><label for="karsabt-register-mobile">شماره موبایل</label><input id="karsabt-register-mobile" name="customer_mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="09123456789" required></p>
-            <p><label for="karsabt-register-password">گذرواژه (حداقل ۱۰ نویسه)</label><input id="karsabt-register-password" name="customer_password" type="password" autocomplete="new-password" minlength="10" required></p>
-            <button type="submit">ثبت‌نام و ورود</button>
-            <p class="karsabt-form-privacy">در این نسخه ورود با گذرواژه انجام می‌شود؛ شماره موبایل هنوز با پیامک تأیید نشده است.</p>
-        </form>
+        <section class="karsabt-order-form">
+            <h3>ورود با کد یک‌بارمصرف</h3>
+            <form method="post">
+                <?php echo wp_nonce_field('karsabt_customer_auth', 'karsabt_auth_nonce', true, false); ?>
+                <input type="hidden" name="karsabt_auth_mode" value="send_login">
+                <p><label for="karsabt-login-mobile">شماره موبایل</label><input id="karsabt-login-mobile" name="customer_mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="09123456789" required></p>
+                <button type="submit">ارسال کد ورود</button>
+            </form>
+            <form method="post">
+                <?php echo wp_nonce_field('karsabt_customer_auth', 'karsabt_auth_nonce', true, false); ?>
+                <input type="hidden" name="karsabt_auth_mode" value="verify_login">
+                <p><label for="karsabt-login-otp-mobile">شماره موبایل</label><input id="karsabt-login-otp-mobile" name="customer_mobile" type="tel" inputmode="tel" required></p>
+                <p><label for="karsabt-login-otp">کد یک‌بارمصرف</label><input id="karsabt-login-otp" name="customer_otp" type="text" inputmode="numeric" pattern="[0-9۰-۹٠-٩]{6}" maxlength="6" autocomplete="one-time-code" required></p>
+                <button type="submit">تأیید کد و ورود</button>
+            </form>
+        </section>
+        <section class="karsabt-order-form">
+            <h3>ثبت‌نام مشتری جدید</h3>
+            <form method="post">
+                <?php echo wp_nonce_field('karsabt_customer_auth', 'karsabt_auth_nonce', true, false); ?>
+                <input type="hidden" name="karsabt_auth_mode" value="send_register">
+                <p><label for="karsabt-register-mobile">شماره موبایل</label><input id="karsabt-register-mobile" name="customer_mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="09123456789" required></p>
+                <button type="submit">دریافت کد ثبت‌نام</button>
+            </form>
+            <form method="post">
+                <?php echo wp_nonce_field('karsabt_customer_auth', 'karsabt_auth_nonce', true, false); ?>
+                <input type="hidden" name="karsabt_auth_mode" value="verify_register">
+                <p><label for="karsabt-register-verify-mobile">شماره موبایل</label><input id="karsabt-register-verify-mobile" name="customer_mobile" type="tel" inputmode="tel" required></p>
+                <p><label for="karsabt-register-otp">کد یک‌بارمصرف</label><input id="karsabt-register-otp" name="customer_otp" type="text" inputmode="numeric" pattern="[0-9۰-۹٠-٩]{6}" maxlength="6" autocomplete="one-time-code" required></p>
+                <p><label for="karsabt-register-name">نام و نام خانوادگی</label><input id="karsabt-register-name" name="customer_full_name" type="text" maxlength="100" autocomplete="name" required></p>
+                <p><label for="karsabt-register-password">گذرواژه (حداقل ۱۰ نویسه)</label><input id="karsabt-register-password" name="customer_password" type="password" minlength="10" autocomplete="new-password" required></p>
+                <button type="submit">تأیید کد و ایجاد حساب</button>
+            </form>
+            <p class="karsabt-form-privacy">حساب فقط پس از تأیید کد پیامک ایجاد می‌شود.</p>
+        </section>
     </div>
     <?php
     return ob_get_clean();
