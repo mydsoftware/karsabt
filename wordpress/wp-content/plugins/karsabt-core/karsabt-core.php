@@ -571,7 +571,7 @@ function karsabt_core_render_order_meta_box($post) {
     $statuses = karsabt_core_statuses();
     $tracking_code = get_post_meta($post->ID, '_karsabt_tracking_code', true);
     $assigned_user_id = absint(get_post_meta($post->ID, '_karsabt_assigned_user_id', true));
-    $admins = get_users(array('capability' => 'manage_options', 'orderby' => 'display_name', 'order' => 'ASC', 'fields' => array('ID', 'display_name')));
+    $admins = current_user_can('manage_options') ? get_users(array('capability' => 'manage_options', 'orderby' => 'display_name', 'order' => 'ASC', 'fields' => array('ID', 'display_name'))) : array();
     $history = get_post_meta($post->ID, '_karsabt_status_history', true);
     $history = is_array($history) ? $history : array();
     $notes = get_post_meta($post->ID, '_karsabt_internal_notes', true);
@@ -583,6 +583,7 @@ function karsabt_core_render_order_meta_box($post) {
         <tr><th>شماره تماس</th><td><a href="<?php echo esc_url('tel:' . preg_replace('/[^0-9+]/', '', $phone)); ?>"><?php echo esc_html($phone); ?></a></td></tr>
         <tr><th>خدمت</th><td><?php echo esc_html(isset(karsabt_core_services()[$service]) ? karsabt_core_services()[$service] : '—'); ?></td></tr>
         <tr><th>توضیحات مشتری</th><td><?php echo nl2br(esc_html($message)); ?></td></tr>
+        <?php if (current_user_can('manage_options')) : ?>
         <tr>
             <th><label for="karsabt-assigned-user">مسئول پیگیری</label></th>
             <td>
@@ -592,9 +593,10 @@ function karsabt_core_render_order_meta_box($post) {
                         <option value="<?php echo esc_attr($admin->ID); ?>" <?php selected($assigned_user_id, $admin->ID); ?>><?php echo esc_html($admin->display_name); ?></option>
                     <?php endforeach; ?>
                 </select>
-                <p class="description">فعلاً فقط مدیران دارای دسترسی کامل درخواست‌ها قابل انتخاب هستند.</p>
+                <p class="description">فقط مدیران دارای دسترسی کامل قابل انتخاب هستند.</p>
             </td>
         </tr>
+        <?php endif; ?>
         <tr>
             <th><label for="karsabt-order-status">وضعیت درخواست</label></th>
             <td>
@@ -660,10 +662,13 @@ function karsabt_core_save_order_meta($post_id) {
 
     $old_status = get_post_meta($post_id, '_karsabt_order_status', true);
     $old_assignee = absint(get_post_meta($post_id, '_karsabt_assigned_user_id', true));
-    $new_assignee = isset($_POST['karsabt_assigned_user_id']) ? absint($_POST['karsabt_assigned_user_id']) : 0;
-    $assignee_user = $new_assignee ? get_user_by('id', $new_assignee) : false;
-    if ($new_assignee && (!$assignee_user || !user_can($assignee_user, 'manage_options'))) {
-        $new_assignee = $old_assignee;
+    $new_assignee = $old_assignee;
+    if (current_user_can('manage_options') && isset($_POST['karsabt_assigned_user_id'])) {
+        $new_assignee = absint($_POST['karsabt_assigned_user_id']);
+        $assignee_user = $new_assignee ? get_user_by('id', $new_assignee) : false;
+        if ($new_assignee && (!$assignee_user || !user_can($assignee_user, 'manage_options'))) {
+            $new_assignee = $old_assignee;
+        }
     }
     if ($new_assignee !== $old_assignee) {
         update_post_meta($post_id, '_karsabt_assigned_user_id', $new_assignee);
