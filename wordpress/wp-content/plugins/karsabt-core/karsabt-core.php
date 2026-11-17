@@ -2,7 +2,7 @@
 /**
  * Plugin Name: کارثبت | هسته سامانه
  * Description: مدیریت درخواست‌های خدمات کارثبت و فرم ثبت سفارش امن.
- * Version: 0.1.0
+ * Version: 0.1.1
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Karsabt
@@ -157,8 +157,8 @@ function karsabt_core_submit_order() {
         '' === $name ||
         !preg_match($phone_pattern, $phone) ||
         !isset($services[$service]) ||
-        mb_strlen($name) > 100 ||
-        mb_strlen($message) > 2000
+        strlen($name) > 400 ||
+        strlen($message) > 8000
     ) {
         karsabt_core_redirect_form('invalid');
     }
