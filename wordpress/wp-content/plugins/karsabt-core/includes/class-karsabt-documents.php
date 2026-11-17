@@ -76,6 +76,11 @@ function karsabt_docs_upload_handler() {
         (int) get_post_meta($order_id, '_karsabt_customer_user_id', true) !== get_current_user_id()) {
         wp_die('دسترسی به این درخواست مجاز نیست.', '', array('response'=>403));
     }
+    $rate_key = 'karsabt_docs_up_' . get_current_user_id();
+    $uploads = (int) get_transient($rate_key);
+    if ($uploads >= 10) { wp_die('سقف بارگذاری ساعتی تکمیل شده است.', '', array('response'=>429)); }
+    $existing_docs = get_post_meta($order_id, '_karsabt_documents', true);
+    if (is_array($existing_docs) && count($existing_docs) >= 20) { wp_die('برای این درخواست حداکثر ۲۰ مدرک مجاز است.', '', array('response'=>400)); }
     $dir = karsabt_docs_private_dir();
     if (!$dir || empty($_FILES['document']) || !isset($_FILES['document']['tmp_name'])) { wp_die('ذخیره‌سازی امن آماده نیست یا فایل ارسال نشده است.', '', array('response'=>400)); }
     $file = $_FILES['document'];
@@ -99,6 +104,7 @@ function karsabt_docs_upload_handler() {
     $docs = is_array($docs) ? $docs : array();
     $docs[] = array('id'=>$id,'file'=>$filename,'name'=>sanitize_file_name($file['name']),'mime'=>$mime,'size'=>(int)$file['size'],'category'=>$category,'status'=>'pending','admin_note'=>'','uploaded_at'=>current_time('mysql'),'user_id'=>get_current_user_id());
     update_post_meta($order_id, '_karsabt_documents', $docs);
+    set_transient($rate_key, $uploads + 1, HOUR_IN_SECONDS);
     wp_safe_redirect(wp_get_referer() ?: home_url('/')); exit;
 }
 add_action('admin_post_karsabt_document_upload', 'karsabt_docs_upload_handler');
