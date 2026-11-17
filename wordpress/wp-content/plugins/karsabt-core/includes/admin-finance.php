@@ -219,3 +219,80 @@ function karsabt_finance_render_payments() {
     }
     echo '</tbody></table></div>';
 }
+
+
+/**
+ * فاکتورها و گردش پرداخت فقط برای حساب مشتری واردشده.
+ * فاکتورهای مهمان یا فاکتورهای متصل به حساب دیگران هرگز نمایش داده نمی‌شوند.
+ */
+function karsabt_finance_customer_account() {
+    if (!is_user_logged_in()) {
+        return '<div class="karsabt-form-notice">برای مشاهده فاکتورها و مانده حساب، ابتدا وارد حساب کاربری شوید.</div>';
+    }
+
+    $user_id = get_current_user_id();
+    $invoices = get_posts(array(
+        'post_type' => 'karsabt_invoice',
+        'post_status' => 'private',
+        'posts_per_page' => 100,
+        'orderby' => 'date',
+        'order' => 'DESC',
+        'meta_key' => '_karsabt_invoice_customer_user_id',
+        'meta_value' => (string) $user_id,
+    ));
+
+    if (!$invoices) {
+        return '<div class="karsabt-form-notice">هنوز فاکتوری به حساب شما متصل نشده است.</div>';
+    }
+
+    global $wpdb;
+    $table = karsabt_finance_table();
+    $total_all = 0;
+    $paid_all = 0;
+    ob_start();
+    echo '<section class="karsabt-customer-finance"><h3>فاکتورها و مانده حساب</h3>';
+    echo '<div class="karsabt-dashboard-table-wrap"><table class="karsabt-dashboard-table"><thead><tr><th>شماره فاکتور</th><th>شرح</th><th>مبلغ</th><th>پرداخت‌شده</th><th>مانده</th><th>وضعیت</th></tr></thead><tbody>';
+
+    foreach ($invoices as $invoice) {
+        // کنترل مالکیت دوباره در زمان نمایش هر ردیف.
+        if ((int) get_post_meta($invoice->ID, '_karsabt_invoice_customer_user_id', true) !== $user_id) {
+            continue;
+        }
+        $total = (int) get_post_meta($invoice->ID, '_karsabt_invoice_amount', true);
+        $paid = karsabt_finance_invoice_paid($invoice->ID);
+        $remaining = max(0, $total - $paid);
+        $total_all += $total;
+        $paid_all += $paid;
+        $status = $paid >= $total ? 'تسویه‌شده' : ($paid > 0 ? 'پرداخت بخشی' : 'پرداخت‌نشده');
+
+        echo '<tr><td><bdi>' . esc_html(get_post_meta($invoice->ID, '_karsabt_invoice_number', true)) . '</bdi></td>';
+        echo '<td>' . esc_html(get_post_meta($invoice->ID, '_karsabt_invoice_description', true)) . '</td>';
+        echo '<td>' . esc_html(karsabt_finance_money($total)) . '</td>';
+        echo '<td>' . esc_html(karsabt_finance_money($paid)) . '</td>';
+        echo '<td>' . esc_html(karsabt_finance_money($remaining)) . '</td>';
+        echo '<td>' . esc_html($status) . '</td></tr>';
+
+        $payments = $wpdb->get_results($wpdb->prepare(
+            "SELECT amount, method, created_at FROM {$table} WHERE invoice_id = %d ORDER BY id DESC",
+            $invoice->ID
+        ));
+        if ($payments) {
+            $method_labels = array('cash' => 'نقدی', 'card' => 'کارت‌به‌کارت/کارت‌خوان', 'transfer' => 'واریز بانکی', 'other' => 'سایر');
+            echo '<tr><td colspan="6"><details><summary>مشاهده سوابق پرداخت</summary><ul>';
+            foreach ($payments as $payment) {
+                $method = isset($method_labels[$payment->method]) ? $method_labels[$payment->method] : 'سایر';
+                echo '<li>' . esc_html(mysql2date('Y/m/d H:i', $payment->created_at)) . ' — ' . esc_html(karsabt_finance_money($payment->amount)) . ' — ' . esc_html($method) . '</li>';
+            }
+            echo '</ul></details></td></tr>';
+        }
+    }
+
+    $remaining_all = max(0, $total_all - $paid_all);
+    echo '</tbody></table></div>';
+    echo '<p><strong>جمع فاکتورها:</strong> ' . esc_html(karsabt_finance_money($total_all)) . '</p>';
+    echo '<p><strong>جمع پرداخت‌ها:</strong> ' . esc_html(karsabt_finance_money($paid_all)) . '</p>';
+    echo '<p><strong>مانده کل:</strong> ' . esc_html(karsabt_finance_money($remaining_all)) . '</p>';
+    echo '<p class="karsabt-form-privacy">مبالغ بر حسب ریال هستند. پرداخت‌های ثبت‌شده در این صفحه صرفاً سوابق ثبت‌شده توسط کارثبت را نشان می‌دهند.</p></section>';
+    return ob_get_clean();
+}
+add_shortcode('karsabt_customer_finance', 'karsabt_finance_customer_account');
