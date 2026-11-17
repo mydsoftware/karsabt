@@ -301,20 +301,17 @@ function karsabt_core_customer_dashboard() {
         return '<div class="karsabt-form-notice">برای مشاهده درخواست‌های خود ابتدا <a href="' . esc_url($login_url) . '">وارد حساب کاربری</a> شوید.</div>';
     }
 
-    $orders = get_posts(array(
-        'post_type'      => 'karsabt_order',
-        'post_status'    => 'private',
-        'posts_per_page' => 50,
-        'orderby'        => 'date',
-        'order'          => 'DESC',
-        'meta_query'     => array(
-            array(
-                'key'     => '_karsabt_customer_user_id',
-                'value'   => (string) get_current_user_id(),
-                'compare' => '=',
-            ),
-        ),
-        'no_found_rows'  => true,
+    global $wpdb;
+    $orders = $wpdb->get_results($wpdb->prepare(
+        "SELECT p.ID, p.post_date FROM {$wpdb->posts} p
+         INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID
+         WHERE p.post_type = %s AND p.post_status = %s
+           AND pm.meta_key = %s AND pm.meta_value = %s
+         ORDER BY p.post_date DESC LIMIT 50",
+        'karsabt_order',
+        'private',
+        '_karsabt_customer_user_id',
+        (string) get_current_user_id()
     ));
 
     ob_start();
@@ -332,7 +329,7 @@ function karsabt_core_customer_dashboard() {
             echo '<td><bdi>' . esc_html($tracking ? $tracking : '—') . '</bdi></td>';
             echo '<td>' . esc_html(isset($services[$service]) ? $services[$service] : '—') . '</td>';
             echo '<td>' . esc_html(isset($statuses[$status]) ? $statuses[$status] : 'در حال بررسی') . '</td>';
-            echo '<td>' . esc_html(get_the_date('Y/m/d', $order)) . '</td>';
+            echo '<td>' . esc_html(mysql2date('Y/m/d', $order->post_date)) . '</td>';
             echo '</tr>';
         }
         echo '</tbody></table></div></div>';
