@@ -571,7 +571,7 @@ function karsabt_core_render_order_meta_box($post) {
     $statuses = karsabt_core_statuses();
     $tracking_code = get_post_meta($post->ID, '_karsabt_tracking_code', true);
     $assigned_user_id = absint(get_post_meta($post->ID, '_karsabt_assigned_user_id', true));
-    $admins = current_user_can('manage_options') ? get_users(array('capability' => 'manage_options', 'orderby' => 'display_name', 'order' => 'ASC', 'fields' => array('ID', 'display_name'))) : array();
+    $admins = current_user_can('manage_options') ? get_users(array('role__in' => array('administrator', 'karsabt_case_worker'), 'orderby' => 'display_name', 'order' => 'ASC', 'fields' => array('ID', 'display_name'))) : array();
     $history = get_post_meta($post->ID, '_karsabt_status_history', true);
     $history = is_array($history) ? $history : array();
     $notes = get_post_meta($post->ID, '_karsabt_internal_notes', true);
@@ -593,7 +593,7 @@ function karsabt_core_render_order_meta_box($post) {
                         <option value="<?php echo esc_attr($admin->ID); ?>" <?php selected($assigned_user_id, $admin->ID); ?>><?php echo esc_html($admin->display_name); ?></option>
                     <?php endforeach; ?>
                 </select>
-                <p class="description">فقط مدیران دارای دسترسی کامل قابل انتخاب هستند.</p>
+                <p class="description">مدیران و کارشناسان دارای نقش اختصاصی قابل انتخاب هستند.</p>
             </td>
         </tr>
         <?php endif; ?>
@@ -666,7 +666,7 @@ function karsabt_core_save_order_meta($post_id) {
     if (current_user_can('manage_options') && isset($_POST['karsabt_assigned_user_id'])) {
         $new_assignee = absint($_POST['karsabt_assigned_user_id']);
         $assignee_user = $new_assignee ? get_user_by('id', $new_assignee) : false;
-        if ($new_assignee && (!$assignee_user || !user_can($assignee_user, 'manage_options'))) {
+        if ($new_assignee && (!$assignee_user || !user_can($assignee_user, 'edit_karsabt_orders'))) {
             $new_assignee = $old_assignee;
         }
     }
