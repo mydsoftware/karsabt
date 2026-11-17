@@ -485,7 +485,7 @@ function karsabt_core_customer_dashboard() {
     if (!$orders) {
         echo '<p class="karsabt-form-notice">هنوز درخواستی به حساب کاربری شما متصل نشده است.</p>';
     } else {
-        echo '<div class="karsabt-customer-dashboard"><div class="karsabt-dashboard-table-wrap"><table class="karsabt-dashboard-table"><thead><tr><th>کد پیگیری</th><th>خدمت</th><th>وضعیت</th><th>تاریخ ثبت</th></tr></thead><tbody>';
+        echo '<div class="karsabt-customer-dashboard"><div class="karsabt-dashboard-table-wrap"><table class="karsabt-dashboard-table"><thead><tr><th>کد پیگیری</th><th>خدمت</th><th>وضعیت</th><th>تاریخ ثبت</th><th>جزئیات</th></tr></thead><tbody>';
         foreach ($orders as $order) {
             $tracking = get_post_meta($order->ID, '_karsabt_tracking_code', true);
             $service = get_post_meta($order->ID, '_karsabt_service', true);
@@ -497,6 +497,8 @@ function karsabt_core_customer_dashboard() {
             echo '<td>' . esc_html(isset($services[$service]) ? $services[$service] : '—') . '</td>';
             echo '<td>' . esc_html(isset($statuses[$status]) ? $statuses[$status] : 'در حال بررسی') . '</td>';
             echo '<td>' . esc_html(mysql2date('Y/m/d', $order->post_date)) . '</td>';
+            $detail_url = add_query_arg('karsabt_order_id', (int) $order->ID, get_permalink());
+            echo '<td><a href="' . esc_url($detail_url) . '">جزئیات درخواست</a></td>';
             echo '</tr>';
         }
         echo '</tbody></table></div></div>';
@@ -663,3 +665,4 @@ require_once __DIR__ . '/includes/class-karsabt-documents.php';
 
 require_once __DIR__ . '/includes/class-karsabt-messages.php';
 require_once __DIR__ . '/includes/class-karsabt-notifications.php';
+require_once __DIR__ . '/includes/class-karsabt-customer-order.php';
