@@ -8,12 +8,31 @@ function karsabt_docs_private_dir() {
     if (!defined('KARSABT_PRIVATE_UPLOAD_DIR') || !is_string(KARSABT_PRIVATE_UPLOAD_DIR)) {
         return '';
     }
-    $dir = rtrim(wp_normalize_path(KARSABT_PRIVATE_UPLOAD_DIR), '/');
-    $root = rtrim(wp_normalize_path(ABSPATH), '/');
-    if ('' === $dir || $dir === $root || 0 === strpos($dir . '/', $root . '/')) {
+
+    $configured = trim(KARSABT_PRIVATE_UPLOAD_DIR);
+    if ('' === $configured || !path_is_absolute($configured)) {
         return '';
     }
-    return $dir;
+
+    $dir = untrailingslashit(wp_normalize_path($configured));
+    if (!wp_mkdir_p($dir) || !is_dir($dir) || !is_writable($dir)) {
+        return '';
+    }
+
+    $real_dir = realpath($dir);
+    $real_root = realpath(ABSPATH);
+    if (false === $real_dir || false === $real_root) {
+        return '';
+    }
+
+    $real_dir = untrailingslashit(wp_normalize_path($real_dir));
+    $real_root = untrailingslashit(wp_normalize_path($real_root));
+    if ($real_dir === $real_root || 0 === strpos($real_dir . '/', $real_root . '/')) {
+        return '';
+    }
+
+    @chmod($real_dir, 0700);
+    return $real_dir;
 }
 
 function karsabt_docs_categories() {
@@ -94,16 +113,19 @@ function karsabt_docs_upload_handler() {
     if (!isset($allowed[$mime])) { wp_die('فقط فایل PDF، JPG و PNG پذیرفته می‌شود.', '', array('response'=>400)); }
     $category = sanitize_key(wp_unslash($_POST['category'] ?? ''));
     if (!isset(karsabt_docs_categories()[$category])) { wp_die('دسته‌بندی معتبر نیست.', '', array('response'=>400)); }
-    if (!wp_mkdir_p($dir) || !is_dir($dir) || !is_writable($dir)) { wp_die('مسیر خصوصی ذخیره‌سازی قابل نوشتن نیست.', '', array('response'=>500)); }
     $id = bin2hex(random_bytes(16));
     $filename = $id . '.' . $allowed[$mime];
     $destination = $dir . '/' . $filename;
     if (!move_uploaded_file($file['tmp_name'], $destination)) { wp_die('ذخیره فایل انجام نشد.', '', array('response'=>500)); }
     @chmod($destination, 0600);
+
     $docs = get_post_meta($order_id, '_karsabt_documents', true);
     $docs = is_array($docs) ? $docs : array();
     $docs[] = array('id'=>$id,'file'=>$filename,'name'=>sanitize_file_name($file['name']),'mime'=>$mime,'size'=>(int)$file['size'],'category'=>$category,'status'=>'pending','admin_note'=>'','uploaded_at'=>current_time('mysql'),'user_id'=>get_current_user_id());
-    update_post_meta($order_id, '_karsabt_documents', $docs);
+    if (!update_post_meta($order_id, '_karsabt_documents', $docs)) {
+        if (is_file($destination)) { @unlink($destination); }
+        wp_die('ثبت اطلاعات مدرک انجام نشد؛ فایل ذخیره‌شده حذف شد.', '', array('response'=>500));
+    }
     set_transient($rate_key, $uploads + 1, HOUR_IN_SECONDS);
     wp_safe_redirect(wp_get_referer() ?: home_url('/')); exit;
 }
@@ -130,11 +152,21 @@ function karsabt_docs_download_handler() {
     $dir = karsabt_docs_private_dir();
     if (!$doc || !$dir || !preg_match('/^[a-f0-9]{32}\.(pdf|jpg|png)$/', $doc['file'] ?? '')) { wp_die('مدرک پیدا نشد.', '', array('response'=>404)); }
     $path = $dir . '/' . $doc['file'];
-    if (!is_file($path) || !is_readable($path)) { wp_die('فایل موجود نیست.', '', array('response'=>404)); }
+    $real_path = realpath($path);
+    $real_dir = realpath($dir);
+    $allowed_mimes = array('pdf'=>'application/pdf', 'jpg'=>'image/jpeg', 'png'=>'image/png');
+    $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    if (false === $real_path || false === $real_dir ||
+        0 !== strpos(wp_normalize_path($real_path), trailingslashit(wp_normalize_path($real_dir))) ||
+        !is_file($real_path) || !is_readable($real_path) ||
+        !isset($allowed_mimes[$extension]) || ($doc['mime'] ?? '') !== $allowed_mimes[$extension]) {
+        wp_die('فایل موجود نیست یا معتبر نیست.', '', array('response'=>404));
+    }
+    $path = $real_path;
     nocache_headers();
     header('X-Content-Type-Options: nosniff');
     header('Content-Security-Policy: default-src none; sandbox');
-    header('Content-Type: ' . $doc['mime']);
+    header('Content-Type: ' . $allowed_mimes[$extension]);
     header('Content-Length: ' . filesize($path));
     header('Content-Disposition: attachment; filename="document.' . pathinfo($path, PATHINFO_EXTENSION) . '"');
     readfile($path); exit;
