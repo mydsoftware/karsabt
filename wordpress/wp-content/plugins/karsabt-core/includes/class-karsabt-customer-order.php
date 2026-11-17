@@ -80,7 +80,7 @@ function karsabt_customer_order_detail_portal() {
     } else {
         echo '<p>برای این درخواست هنوز مدرکی ثبت نشده است.</p>';
     }
-    echo '<p><a href="' . esc_url(add_query_arg('karsabt_order_id', $order_id, remove_query_arg('karsabt_order_id'))) . '#documents">مدیریت و بارگذاری مدارک</a></p>';
+    echo '<p>برای بارگذاری مدارک، از برگه «مدارک من» استفاده کنید.</p>';
 
     echo '<h4>گفت‌وگو با پشتیبانی</h4>';
     if ($messages) {
