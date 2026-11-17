@@ -1,0 +1,86 @@
+<?php
+/**
+ * سرویس مستقل رمز یک‌بارمصرف کارثبت.
+ * اتصال‌دهنده پیامک از طریق فیلتر karsabt_send_otp به این سرویس متصل می‌شود.
+ */
+if (!defined('ABSPATH')) { exit; }
+
+final class Karsabt_OTP_Service {
+    const CODE_TTL = 300;
+    const RESEND_DELAY = 60;
+    const MAX_VERIFY_ATTEMPTS = 5;
+    const MAX_SENDS_PER_HOUR = 5;
+
+    private static function mobile_key($mobile) {
+        return hash_hmac('sha256', (string) $mobile, wp_salt('auth'));
+    }
+
+    private static function transient_key($prefix, $mobile) {
+        return 'karsabt_otp_' . $prefix . '_' . self::mobile_key($mobile);
+    }
+
+    /** @return true|WP_Error */
+    public static function send($mobile) {
+        $mobile = function_exists('karsabt_core_normalize_mobile') ? karsabt_core_normalize_mobile($mobile) : '';
+        if (!$mobile) { return new WP_Error('invalid_mobile', 'شماره موبایل معتبر نیست.'); }
+
+        $cooldown_key = self::transient_key('cooldown', $mobile);
+        $hour_key = self::transient_key('hour', $mobile);
+        if (get_transient($cooldown_key)) {
+            return new WP_Error('otp_wait', 'برای ارسال مجدد کد، کمی صبر کنید.');
+        }
+
+        $sent = (int) get_transient($hour_key);
+        if ($sent >= self::MAX_SENDS_PER_HOUR) {
+            return new WP_Error('otp_rate_limited', 'سقف ارسال کد برای این شماره به پایان رسیده است.');
+        }
+
+        $code = (string) random_int(100000, 999999);
+        $message = sprintf('کد ورود کارثبت: %s', $code);
+
+        // تا زمانی که اتصال‌دهنده واقعی پیامک true برنگرداند، کد فعال نمی‌شود.
+        $result = apply_filters('karsabt_send_otp', false, $mobile, $code, $message);
+        if (true !== $result) {
+            return new WP_Error('otp_provider_unavailable', 'درگاه ارسال پیامک هنوز پیکربندی نشده است.');
+        }
+
+        $payload = array(
+            'hash' => hash_hmac('sha256', self::mobile_key($mobile) . ':' . $code, wp_salt('secure_auth')),
+            'attempts' => 0,
+        );
+        set_transient(self::transient_key('code', $mobile), $payload, self::CODE_TTL);
+        set_transient($cooldown_key, 1, self::RESEND_DELAY);
+        set_transient($hour_key, $sent + 1, HOUR_IN_SECONDS);
+        return true;
+    }
+
+    /** @return true|WP_Error */
+    public static function verify($mobile, $code) {
+        $mobile = function_exists('karsabt_core_normalize_mobile') ? karsabt_core_normalize_mobile($mobile) : '';
+        $code = preg_replace('/[^0-9]/', '', (string) $code);
+        if (!$mobile || !preg_match('/^[0-9]{6}$/', $code)) {
+            return new WP_Error('invalid_otp', 'کد تأیید معتبر نیست یا منقضی شده است.');
+        }
+
+        $transient_key = self::transient_key('code', $mobile);
+        $payload = get_transient($transient_key);
+        if (!is_array($payload) || empty($payload['hash'])) {
+            return new WP_Error('otp_expired', 'کد تأیید معتبر نیست یا منقضی شده است.');
+        }
+
+        $expected = hash_hmac('sha256', self::mobile_key($mobile) . ':' . $code, wp_salt('secure_auth'));
+        if (!hash_equals($payload['hash'], $expected)) {
+            $payload['attempts'] = isset($payload['attempts']) ? (int) $payload['attempts'] + 1 : 1;
+            if ($payload['attempts'] >= self::MAX_VERIFY_ATTEMPTS) {
+                delete_transient($transient_key);
+            } else {
+                set_transient($transient_key, $payload, self::CODE_TTL);
+            }
+            return new WP_Error('invalid_otp', 'کد تأیید اشتباه است.');
+        }
+
+        delete_transient($transient_key);
+        delete_transient(self::transient_key('cooldown', $mobile));
+        return true;
+    }
+}
