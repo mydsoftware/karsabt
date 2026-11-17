@@ -289,3 +289,4 @@ function karsabt_core_order_column_content($column, $post_id) {
     }
 }
 add_action('manage_karsabt_order_posts_custom_column', 'karsabt_core_order_column_content', 10, 2);
+require_once __DIR__ . '/includes/admin-orders.php';
