@@ -2,7 +2,7 @@
 /**
  * Plugin Name: کارثبت | هسته سامانه
  * Description: مدیریت درخواست‌های خدمات کارثبت و فرم ثبت سفارش امن.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Karsabt
