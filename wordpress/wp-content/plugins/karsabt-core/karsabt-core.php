@@ -2,7 +2,7 @@
 /**
  * Plugin Name: کارثبت | هسته سامانه
  * Description: مدیریت درخواست‌های خدمات کارثبت و فرم ثبت سفارش امن.
- * Version: 0.3.0
+ * Version: 0.4.0
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Karsabt
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('KARSABT_CORE_VERSION', '0.3.0');
+define('KARSABT_CORE_VERSION', '0.4.0');
 
 function karsabt_core_enqueue_styles() {
     wp_enqueue_style('karsabt-core-forms', plugin_dir_url(__FILE__) . 'assets/css/forms.css', array(), KARSABT_CORE_VERSION);
@@ -203,6 +203,75 @@ function karsabt_core_submit_order() {
 }
 add_action('admin_post_nopriv_karsabt_submit_order', 'karsabt_core_submit_order');
 add_action('admin_post_karsabt_submit_order', 'karsabt_core_submit_order');
+
+
+/**
+ * نمایش امن وضعیت درخواست با کد پیگیری؛ هیچ اطلاعات هویتی یا یادداشت داخلی برگردانده نمی‌شود.
+ */
+function karsabt_core_order_tracking() {
+    global $wpdb;
+
+    $result_html = '';
+    $submitted = isset($_POST['karsabt_tracking_submit']);
+    if ($submitted) {
+        $nonce = isset($_POST['karsabt_tracking_nonce']) ? sanitize_text_field(wp_unslash($_POST['karsabt_tracking_nonce'])) : '';
+        if (!$nonce || !wp_verify_nonce($nonce, 'karsabt_tracking_lookup')) {
+            $result_html = '<p class="karsabt-form-notice karsabt-form-error" role="alert">درخواست معتبر نیست. صفحه را تازه‌سازی و دوباره تلاش کنید.</p>';
+        } else {
+            $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
+            $rate_key = 'karsabt_track_' . hash('sha256', $ip);
+            $attempts = (int) get_transient($rate_key);
+            if ($attempts >= 8) {
+                $result_html = '<p class="karsabt-form-notice karsabt-form-error" role="alert">تعداد تلاش‌ها بیش از حد مجاز است. ۱۵ دقیقه دیگر دوباره تلاش کنید.</p>';
+            } else {
+                set_transient($rate_key, $attempts + 1, 15 * MINUTE_IN_SECONDS);
+                $code = isset($_POST['tracking_code']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['tracking_code']))) : '';
+                if (!preg_match('/^KRS-[0-9]{4,6}-[0-9]{6}-[A-Z0-9]{4}$/', $code)) {
+                    $result_html = '<p class="karsabt-form-notice karsabt-form-error" role="alert">کد پیگیری معتبر نیست یا درخواستی با این کد پیدا نشد.</p>';
+                } else {
+                    $meta_table = $wpdb->postmeta;
+                    $posts_table = $wpdb->posts;
+                    $order_id = $wpdb->get_var($wpdb->prepare(
+                        "SELECT p.ID FROM {$posts_table} p INNER JOIN {$meta_table} pm ON p.ID = pm.post_id WHERE p.post_type = %s AND p.post_status = %s AND pm.meta_key = %s AND pm.meta_value = %s LIMIT 1",
+                        'karsabt_order',
+                        'private',
+                        '_karsabt_tracking_code',
+                        $code
+                    ));
+
+                    if ($order_id) {
+                        $status = get_post_meta((int) $order_id, '_karsabt_order_status', true);
+                        $statuses = karsabt_core_statuses();
+                        $history = get_post_meta((int) $order_id, '_karsabt_status_history', true);
+                        $history = is_array($history) ? $history : array();
+                        $last_event = $history ? end($history) : array();
+                        $status_label = isset($statuses[$status]) ? $statuses[$status] : 'در حال بررسی';
+                        $updated_at = isset($last_event['time']) ? $last_event['time'] : get_post_field('post_date', (int) $order_id);
+                        $result_html = '<div class="karsabt-tracking-result" role="status"><p><strong>وضعیت درخواست:</strong> ' . esc_html($status_label) . '</p><p><strong>آخرین به‌روزرسانی:</strong> ' . esc_html($updated_at) . '</p></div>';
+                    } else {
+                        $result_html = '<p class="karsabt-form-notice karsabt-form-error" role="alert">کد پیگیری معتبر نیست یا درخواستی با این کد پیدا نشد.</p>';
+                    }
+                }
+            }
+        }
+    }
+
+    ob_start();
+    echo $result_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+    ?>
+    <form class="karsabt-order-form karsabt-tracking-form" method="post">
+        <?php echo wp_nonce_field('karsabt_tracking_lookup', 'karsabt_tracking_nonce', true, false); ?>
+        <p>
+            <label for="karsabt-tracking-code">کد پیگیری</label>
+            <input id="karsabt-tracking-code" name="tracking_code" type="text" maxlength="24" placeholder="KRS-YYMM-000001-AB12" autocomplete="off" required>
+        </p>
+        <button type="submit" name="karsabt_tracking_submit" value="1">پیگیری درخواست</button>
+        <p class="karsabt-form-privacy">در این بخش فقط وضعیت درخواست نمایش داده می‌شود.</p>
+    </form>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('karsabt_order_tracking', 'karsabt_core_order_tracking');
 
 function karsabt_core_generate_tracking_code($order_id) {
     return 'KRS-' . gmdate('ym') . '-' . str_pad((string) $order_id, 6, '0', STR_PAD_LEFT) . '-' . strtoupper(wp_generate_password(4, false, false));
