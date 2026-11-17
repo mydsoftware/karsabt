@@ -24,7 +24,7 @@ function karsabt_staff_render_dashboard() {
 
     $user_id = get_current_user_id();
     $status_filter = isset($_GET['karsabt_status']) ? sanitize_key(wp_unslash($_GET['karsabt_status'])) : '';
-    $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
+    $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';\n    $service_filter = isset($_GET['karsabt_service']) ? sanitize_key(wp_unslash($_GET['karsabt_service'])) : '';\n    $services = karsabt_core_services();\n    if (!isset($services[$service_filter])) { $service_filter = ''; }
     $statuses = karsabt_core_statuses();
     if (!isset($statuses[$status_filter])) { $status_filter = ''; }
 
@@ -85,7 +85,7 @@ function karsabt_staff_render_dashboard() {
         echo '<option value="' . esc_attr($key) . '" ' . selected($status_filter, $key, false) . '>' . esc_html($label) . '</option>';
     }
     echo '</select>';
-    echo '<label class="screen-reader-text" for="karsabt-staff-search">جستجوی درخواست</label><input id="karsabt-staff-search" type="search" name="s" value="' . esc_attr($search) . '" placeholder="جستجوی عنوان درخواست">';
+    echo '<label for="karsabt-staff-service">خدمت</label><select id="karsabt-staff-service" name="karsabt_service"><option value="">همه خدمات</option>';\n    foreach ($services as $key => $label) {\n        echo '<option value="' . esc_attr($key) . '" ' . selected($service_filter, $key, false) . '>' . esc_html($label) . '</option>';\n    }\n    echo '</select>';\n    echo '<label class="screen-reader-text" for="karsabt-staff-search">جستجوی درخواست</label><input id="karsabt-staff-search" type="search" name="s" value="' . esc_attr($search) . '" placeholder="نام، موبایل یا کد پیگیری">';
     submit_button('اعمال فیلتر', 'secondary', '', false);
     echo '</form>';
 
@@ -112,7 +112,7 @@ function karsabt_staff_render_dashboard() {
         echo '</tbody></table>';
         if ($orders->max_num_pages > 1) {
             echo '<div class="tablenav"><div class="tablenav-pages">' . wp_kses_post(paginate_links(array(
-                'base' => add_query_arg(array('page' => 'karsabt-staff-dashboard', 'paged' => '%#%', 'karsabt_status' => $status_filter, 's' => $search), admin_url('admin.php')),
+                'base' => add_query_arg(array('page' => 'karsabt-staff-dashboard', 'paged' => '%#%', 'karsabt_status' => $status_filter, 'karsabt_service' => $service_filter, 's' => $search), admin_url('admin.php')),
                 'format' => '', 'current' => $page, 'total' => $orders->max_num_pages,
             ))) . '</div></div>';
         }
