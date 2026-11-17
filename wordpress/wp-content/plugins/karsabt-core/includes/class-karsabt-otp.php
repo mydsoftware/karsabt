@@ -57,7 +57,13 @@ final class Karsabt_OTP_Service {
     /** @return true|WP_Error */
     public static function verify($mobile, $code) {
         $mobile = function_exists('karsabt_core_normalize_mobile') ? karsabt_core_normalize_mobile($mobile) : '';
-        $code = preg_replace('/[^0-9]/', '', (string) $code);
+        $code = strtr((string) $code, array(
+            '۰'=>'0','۱'=>'1','۲'=>'2','۳'=>'3','۴'=>'4',
+            '۵'=>'5','۶'=>'6','۷'=>'7','۸'=>'8','۹'=>'9',
+            '٠'=>'0','١'=>'1','٢'=>'2','٣'=>'3','٤'=>'4',
+            '٥'=>'5','٦'=>'6','٧'=>'7','٨'=>'8','٩'=>'9',
+        ));
+        $code = preg_replace('/[^0-9]/', '', $code);
         if (!$mobile || !preg_match('/^[0-9]{6}$/', $code)) {
             return new WP_Error('invalid_otp', 'کد تأیید معتبر نیست یا منقضی شده است.');
         }
