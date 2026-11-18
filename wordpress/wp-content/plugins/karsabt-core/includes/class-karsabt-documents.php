@@ -35,6 +35,69 @@ function karsabt_docs_private_dir() {
     return $real_dir;
 }
 
+function karsabt_docs_default_checklists() {
+    return array(
+        'company' => array('!مدارک هویتی شرکا یا سهامداران','!اطلاعات تماس متقاضی','اطلاعات یا مدارک مربوط به نشانی شرکت','مدارک یا اطلاعات تکمیلی موضوع فعالیت'),
+        'trademark' => array('!تصویر یا فایل نمونه برند','!مشخصات مالک برند','فهرست کالاها یا خدمات مرتبط','مدارک مرتبط با فعالیت متقاضی'),
+        'business' => array('!مدارک هویتی متقاضی','!اطلاعات محل کسب','مدارک مرتبط با نوع فعالیت صنفی'),
+        'home_business' => array('!مدارک هویتی متقاضی','!شرح فعالیت یا محصول','تصاویر یا نمونه محصول (در صورت وجود)'),
+        'online_cafe' => array('!اطلاعات لازم برای انجام خدمت','فایل‌ها و مستندات مرتبط با درخواست'),
+        'other' => array('!اطلاعات و مستندات مرتبط با خدمت درخواستی'),
+    );
+}
+
+function karsabt_docs_checklists() {
+    $saved = get_option('karsabt_service_document_checklists', array());
+    $defaults = karsabt_docs_default_checklists();
+    if (!is_array($saved)) { $saved = array(); }
+    $result = array();
+    foreach ($defaults as $service => $items) {
+        $lines = isset($saved[$service]) && is_array($saved[$service]) ? $saved[$service] : $items;
+        $result[$service] = array();
+        foreach ($lines as $line) {
+            if (!is_string($line)) { continue; }
+            $line = trim($line);
+            if ('' === ltrim($line, '!')) { continue; }
+            $required = '!' === substr($line, 0, 1);
+            $title = sanitize_text_field($required ? substr($line, 1) : $line);
+            if ('' !== $title) { $result[$service][] = array('key'=>sanitize_title($title), 'title'=>$title, 'required'=>$required); }
+        }
+    }
+    return $result;
+}
+
+function karsabt_docs_checklist_admin_page() {
+    if (!current_user_can('manage_options')) { wp_die('دسترسی مجاز نیست.'); }
+    if (isset($_POST['karsabt_save_checklists'])) {
+        check_admin_referer('karsabt_save_checklists');
+        $raw = isset($_POST['checklists']) && is_array($_POST['checklists']) ? wp_unslash($_POST['checklists']) : array();
+        $clean = array();
+        foreach (karsabt_core_services() as $service => $label) {
+            $text = isset($raw[$service]) && is_string($raw[$service]) ? $raw[$service] : '';
+            $rows = preg_split('/\r\n|\r|\n/', $text);
+            $clean[$service] = array();
+            foreach ($rows as $row) {
+                $row = trim($row);
+                if ('' === ltrim($row, '!')) { continue; }
+                $required = '!' === substr($row, 0, 1);
+                $title = sanitize_text_field($required ? substr($row, 1) : $row);
+                if ('' !== $title && strlen($title) <= 240) { $clean[$service][] = ($required ? '!' : '') . $title; }
+            }
+        }
+        update_option('karsabt_service_document_checklists', $clean, false);
+        echo '<div class="notice notice-success"><p>چک‌لیست مدارک ذخیره شد.</p></div>';
+    }
+    $checklists = karsabt_docs_checklists();
+    echo '<div class="wrap"><h1>چک‌لیست مدارک خدمات</h1><p>هر مدرک را در یک خط بنویسید. ابتدای مدارک الزامی علامت ! بگذارید. این فهرست راهنمای اولیه است و باید متناسب با پرونده و مقررات روز بررسی شود.</p><form method="post">';
+    wp_nonce_field('karsabt_save_checklists');
+    foreach (karsabt_core_services() as $service => $label) {
+        $lines = array();
+        foreach ($checklists[$service] as $item) { $lines[] = ($item['required'] ? '!' : '') . $item['title']; }
+        echo '<h2>' . esc_html($label) . '</h2><textarea name="checklists[' . esc_attr($service) . ']" rows="5" class="large-text code">' . esc_textarea(implode("\n", $lines)) . '</textarea>';
+    }
+    echo '<p><button class="button button-primary" name="karsabt_save_checklists" value="1">ذخیره چک‌لیست‌ها</button></p></form></div>';
+}
+
 function karsabt_docs_categories() {
     return array('identity' => 'مدارک هویتی', 'company' => 'مدارک شرکت', 'other' => 'سایر مدارک');
 }
@@ -62,6 +125,20 @@ function karsabt_docs_customer_portal() {
         $html .= '<div class="karsabt-document-order"><h4>درخواست ' . esc_html(get_post_meta($order->ID, '_karsabt_tracking_code', true)) . '</h4>';
         $docs = get_post_meta($order->ID, '_karsabt_documents', true);
         $docs = is_array($docs) ? $docs : array();
+        $service = get_post_meta($order->ID, '_karsabt_service', true);
+        $checklists = karsabt_docs_checklists();
+        $items = isset($checklists[$service]) ? $checklists[$service] : array();
+        if ($items) {
+            $html .= '<h5>چک‌لیست مدارک این خدمت</h5><ul class="karsabt-required-documents">';
+            foreach ($items as $item) {
+                $matched = false;
+                foreach ($docs as $uploaded) {
+                    if (($uploaded['checklist_key'] ?? '') === $item['key'] && in_array(($uploaded['status'] ?? ''), array('pending','approved'), true)) { $matched = true; break; }
+                }
+                $html .= '<li>' . esc_html($item['title']) . ' — ' . esc_html($item['required'] ? 'الزامی' : 'اختیاری') . ' — ' . esc_html($matched ? 'بارگذاری شده' : 'بارگذاری نشده') . '</li>';
+            }
+            $html .= '</ul>';
+        }
         if ($docs) {
             $html .= '<ul>';
             foreach ($docs as $doc) {
@@ -75,6 +152,9 @@ function karsabt_docs_customer_portal() {
         } else { $html .= '<p>هنوز مدرکی ثبت نشده است.</p>'; }
         $html .= '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
         $html .= '<input type="hidden" name="action" value="karsabt_document_upload"><input type="hidden" name="order_id" value="' . esc_attr($order->ID) . '">';
+        $html .= '<p><label>عنوان مدرک <select name="checklist_key"><option value="">مدرک متفرقه</option>';
+        foreach ($items as $item) { $html .= '<option value="' . esc_attr($item['key']) . '">' . esc_html($item['title']) . '</option>'; }
+        $html .= '</select></label></p>';
         $html .= wp_nonce_field('karsabt_document_upload_'.$order->ID, 'karsabt_docs_nonce', true, false);
         $html .= '<p><label>دسته مدرک <select name="category" required>';
         foreach (karsabt_docs_categories() as $key=>$label) { $html .= '<option value="'.esc_attr($key).'">'.esc_html($label).'</option>'; }
@@ -121,7 +201,14 @@ function karsabt_docs_upload_handler() {
 
     $docs = get_post_meta($order_id, '_karsabt_documents', true);
     $docs = is_array($docs) ? $docs : array();
-    $docs[] = array('id'=>$id,'file'=>$filename,'name'=>sanitize_file_name($file['name']),'mime'=>$mime,'size'=>(int)$file['size'],'category'=>$category,'status'=>'pending','admin_note'=>'','uploaded_at'=>current_time('mysql'),'user_id'=>get_current_user_id());
+    $checklist_key = sanitize_title(wp_unslash($_POST['checklist_key'] ?? ''));
+    $service = get_post_meta($order_id, '_karsabt_service', true);
+    $valid_item = null;
+    foreach ((karsabt_docs_checklists()[$service] ?? array()) as $item) {
+        if ($item['key'] === $checklist_key) { $valid_item = $item; break; }
+    }
+    if ('' !== $checklist_key && !$valid_item) { wp_die('مدرک انتخاب‌شده معتبر نیست.', '', array('response'=>400)); }
+    $docs[] = array('id'=>$id,'file'=>$filename,'name'=>sanitize_file_name($file['name']),'checklist_key'=>$valid_item ? $valid_item['key'] : '', 'checklist_title'=>$valid_item ? $valid_item['title'] : '', 'mime'=>$mime,'size'=>(int)$file['size'],'category'=>$category,'status'=>'pending','admin_note'=>'','uploaded_at'=>current_time('mysql'),'user_id'=>get_current_user_id());
     if (!update_post_meta($order_id, '_karsabt_documents', $docs)) {
         if (is_file($destination)) { @unlink($destination); }
         wp_die('ثبت اطلاعات مدرک انجام نشد؛ فایل ذخیره‌شده حذف شد.', '', array('response'=>500));
@@ -212,5 +299,6 @@ function karsabt_docs_admin_page() {
 }
 function karsabt_docs_admin_menu() {
     add_submenu_page('edit.php?post_type=karsabt_order','مدارک مشتریان','مدارک مشتریان','manage_options','karsabt-documents','karsabt_docs_admin_page');
+    add_submenu_page('edit.php?post_type=karsabt_order','چک‌لیست مدارک','چک‌لیست مدارک','manage_options','karsabt-document-checklists','karsabt_docs_checklist_admin_page');
 }
 add_action('admin_menu','karsabt_docs_admin_menu');
