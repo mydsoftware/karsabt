@@ -2,7 +2,7 @@
 /**
  * Plugin Name: کارثبت | هسته سامانه
  * Description: مدیریت درخواست‌های خدمات کارثبت و فرم ثبت سفارش امن.
- * Version: 0.20.0
+ * Version: 0.21.0
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Karsabt
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('KARSABT_CORE_VERSION', '0.20.0');
+define('KARSABT_CORE_VERSION', '0.21.0');
 
 function karsabt_core_enqueue_styles() {
     wp_enqueue_style('karsabt-core-forms', plugin_dir_url(__FILE__) . 'assets/css/forms.css', array(), KARSABT_CORE_VERSION);
@@ -169,8 +169,13 @@ function karsabt_core_order_form() {
                 <?php endforeach; ?>
             </select>
         </p>
+        <?php
+        if (function_exists('karsabt_service_forms_render_fields')) {
+            echo karsabt_service_forms_render_fields();
+        }
+        ?>
         <p>
-            <label for="karsabt-order-message">توضیحات (اختیاری)</label>
+            <label for="karsabt-order-message">توضیحات تکمیلی (اختیاری)</label>
             <textarea id="karsabt-order-message" name="customer_message" rows="4" maxlength="2000"></textarea>
         </p>
         <p class="karsabt-honeypot" aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden">
@@ -216,12 +221,17 @@ function karsabt_core_submit_order() {
     $phone_pattern = '/^[0-9۰-۹٠-٩+()\-\s]{8,20}$/u';
     $services = karsabt_core_services();
 
+    $service_details = function_exists('karsabt_service_forms_validate')
+        ? karsabt_service_forms_validate($service, $_POST['service_details'] ?? array())
+        : array();
+
     if (
         '' === $name ||
         !preg_match($phone_pattern, $phone) ||
         !isset($services[$service]) ||
         strlen($name) > 400 ||
-        strlen($message) > 8000
+        strlen($message) > 8000 ||
+        is_wp_error($service_details)
     ) {
         karsabt_core_redirect_form('invalid');
     }
@@ -240,6 +250,9 @@ function karsabt_core_submit_order() {
     update_post_meta($order_id, '_karsabt_customer_phone', $phone);
     update_post_meta($order_id, '_karsabt_service', $service);
     update_post_meta($order_id, '_karsabt_customer_message', $message);
+    if (function_exists('karsabt_service_forms_save_details')) {
+        karsabt_service_forms_save_details($order_id, $service, $service_details);
+    }
     if (is_user_logged_in()) {
         update_post_meta($order_id, '_karsabt_customer_user_id', get_current_user_id());
     }
@@ -767,3 +780,5 @@ require_once __DIR__ . '/includes/class-karsabt-notifications.php';
 require_once __DIR__ . '/includes/class-karsabt-customer-order.php';
 
 require_once __DIR__ . '/includes/admin-reports.php';
+require_once __DIR__ . '/includes/class-karsabt-service-forms.php';
+
