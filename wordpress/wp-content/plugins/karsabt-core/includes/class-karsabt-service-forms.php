@@ -71,7 +71,7 @@ function karsabt_service_forms_render_fields() {
                 $control = '<textarea id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" rows="3" maxlength="' . esc_attr($field['max']) . '"' . ($required ? ' required' : '') . ' disabled></textarea>';
             } else {
                 $type = 'number' === $field['type'] ? 'number' : 'text';
-                $control = '<input id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" type="' . esc_attr($type) . '" maxlength="' . esc_attr($field['max']) . '"' . ('number' === $type ? ' min="' . esc_attr($field['min']) . '" max="' . esc_attr($field['max']) . '"' : '') . ($required ? ' required' : '') . ' disabled>'';
+                $control = '<input id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" type="' . esc_attr($type) . '" maxlength="' . esc_attr($field['max']) . '"' . ('number' === $type ? ' min="' . esc_attr($field['min']) . '" max="' . esc_attr($field['max']) . '"' : '') . ($required ? ' required' : '') . ' disabled>';
             }
             $html .= '<p>' . $label . $control . '</p>';
         }
