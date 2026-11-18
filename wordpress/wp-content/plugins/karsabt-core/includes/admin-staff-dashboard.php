@@ -98,6 +98,61 @@ function karsabt_staff_render_dashboard() {
     }
     $average_days = $durations ? array_sum($durations) / count($durations) : null;
 
+    // صف کاری پیشنهادی: فقط پرونده‌های باز تخصیص‌یافته به همین کارشناس.
+    // برای جلوگیری از بارگذاری کل آرشیو، حداکثر ۱۰۰ پرونده بررسی می‌شود.
+    $queue_query = new WP_Query(array(
+        'post_type' => 'karsabt_order',
+        'post_status' => 'private',
+        'posts_per_page' => 100,
+        'fields' => 'all',
+        'no_found_rows' => true,
+        'meta_query' => array(
+            'relation' => 'AND',
+            $base_meta[0],
+            array('key' => '_karsabt_order_status', 'value' => array('completed','rejected'), 'compare' => 'NOT IN'),
+        ),
+        'orderby' => 'date',
+        'order' => 'ASC',
+    ));
+    $today_date = wp_date('Y-m-d');
+    $now_utc = current_time('timestamp', true);
+    $work_queue = array();
+    foreach ($queue_query->posts as $queue_order) {
+        $due = (string) get_post_meta($queue_order->ID, '_karsabt_due_date', true);
+        $created_utc = (int) get_post_time('U', true, $queue_order);
+        $age_days = $created_utc > 0 ? (int) floor(($now_utc - $created_utc) / DAY_IN_SECONDS) : 0;
+        $rank = 4;
+        $priority_label = 'عادی';
+        if ($due && preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $due) && $due < $today_date) {
+            $rank = 0; $priority_label = 'معوق';
+        } elseif ($due === $today_date) {
+            $rank = 1; $priority_label = 'سررسید امروز';
+        } elseif ($due && $due > $today_date && $due <= wp_date('Y-m-d', strtotime('+3 days', current_time('timestamp')))) {
+            $rank = 2; $priority_label = 'نزدیک سررسید';
+        } elseif ($age_days >= 7) {
+            $rank = 3; $priority_label = 'قدیمی و نیازمند بررسی';
+        }
+        $work_queue[] = array(
+            'id' => $queue_order->ID,
+            'rank' => $rank,
+            'priority' => $priority_label,
+            'due' => $due,
+            'created' => $queue_order->post_date,
+            'age' => max(0, $age_days),
+        );
+    }
+    usort($work_queue, function($a, $b) {
+        if ($a['rank'] !== $b['rank']) { return $a['rank'] <=> $b['rank']; }
+        if ($a['due'] !== $b['due']) {
+            if ('' === $a['due']) { return 1; }
+            if ('' === $b['due']) { return -1; }
+            return strcmp($a['due'], $b['due']);
+        }
+        return strcmp($a['created'], $b['created']);
+    });
+    $work_queue = array_slice($work_queue, 0, 10);
+
+
     $page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
     $meta_query = $base_meta;
     if ($status_filter) {
@@ -141,6 +196,29 @@ function karsabt_staff_render_dashboard() {
     echo '<div class="card" style="min-width:180px;padding:12px"><strong>میانگین زمان تا اولین تکمیل</strong><p style="font-size:24px;margin:8px 0">' . esc_html(null === $average_days ? 'داده کافی نیست' : number_format_i18n($average_days, 1) . ' روز') . '</p></div>';
     echo '</div>';
     echo '<p class="description">محاسبات از تاریخچه ثبت‌شده وضعیت‌ها و پرونده‌های تخصیص‌یافته فعلی انجام می‌شود؛ رویدادهای قدیمی یا فاقد زمان معتبر در میانگین لحاظ نمی‌شوند.</p>';
+
+    echo '<h2>صف کاری پیشنهادی امروز</h2>';
+    echo '<p class="description">اولویت‌بندی خودکار بر اساس مهلت ثبت‌شده، سپس سن پرونده انجام می‌شود. این صف حداکثر ۱۰۰ پرونده باز اخیر شما را بررسی و ۱۰ مورد اولویت‌دار را نمایش می‌دهد.</p>';
+    echo '<table class="widefat striped"><thead><tr><th>اولویت</th><th>کد پیگیری</th><th>مشتری</th><th>خدمت</th><th>مهلت هدف</th><th>سن پرونده</th><th>اقدام</th></tr></thead><tbody>';
+    if (!$work_queue) {
+        echo '<tr><td colspan="7">پرونده باز تخصیص‌یافته‌ای برای نمایش وجود ندارد.</td></tr>';
+    } else {
+        foreach ($work_queue as $queue_item) {
+            $qid = $queue_item['id'];
+            if (!current_user_can('edit_karsabt_order', $qid)) { continue; }
+            $qcode = get_post_meta($qid, '_karsabt_tracking_code', true);
+            $qname = get_post_meta($qid, '_karsabt_customer_name', true);
+            $qservice = get_post_meta($qid, '_karsabt_service', true);
+            echo '<tr><td><strong>'.esc_html($queue_item['priority']).'</strong></td>';
+            echo '<td><bdi>'.esc_html($qcode ? $qcode : '—').'</bdi></td>';
+            echo '<td>'.esc_html($qname).'</td>';
+            echo '<td>'.esc_html(isset($services[$qservice]) ? $services[$qservice] : '—').'</td>';
+            echo '<td>'.esc_html($queue_item['due'] ? $queue_item['due'] : 'ثبت نشده').'</td>';
+            echo '<td>'.esc_html(number_format_i18n($queue_item['age'])).' روز</td>';
+            echo '<td><a class="button button-small" href="'.esc_url(get_edit_post_link($qid, '')).'">بازکردن پرونده</a></td></tr>';
+        }
+    }
+    echo '</tbody></table>';
 
     echo '<form method="get" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:16px 0">';
     echo '<input type="hidden" name="page" value="karsabt-staff-dashboard">';
