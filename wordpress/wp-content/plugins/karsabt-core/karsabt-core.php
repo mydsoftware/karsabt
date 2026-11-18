@@ -2,7 +2,7 @@
 /**
  * Plugin Name: کارثبت | هسته سامانه
  * Description: مدیریت درخواست‌های خدمات کارثبت و فرم ثبت سفارش امن.
- * Version: 0.22.0
+ * Version: 0.23.0
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Karsabt
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('KARSABT_CORE_VERSION', '0.22.0');
+define('KARSABT_CORE_VERSION', '0.23.0');
 
 function karsabt_core_enqueue_styles() {
     wp_enqueue_style('karsabt-core-forms', plugin_dir_url(__FILE__) . 'assets/css/forms.css', array(), KARSABT_CORE_VERSION);
@@ -618,6 +618,14 @@ function karsabt_core_render_order_meta_box($post) {
                         <option value="<?php echo esc_attr($key); ?>" <?php selected($status ? $status : 'new', $key); ?>><?php echo esc_html($label); ?></option>
                     <?php endforeach; ?>
                 </select>
+                <?php
+                $missing_required = function_exists('karsabt_core_missing_required_documents') ? karsabt_core_missing_required_documents($post->ID) : array();
+                if ($missing_required) :
+                ?>
+                    <p class="description" style="color:#b32d2e">برای انتخاب وضعیت «انجام‌شده»، مدارک الزامی زیر باید تأیید شوند: <?php echo esc_html(implode('، ', $missing_required)); ?></p>
+                <?php else : ?>
+                    <p class="description">برای نهایی‌کردن پرونده، تمام مدارک الزامی باید تأیید شده باشند.</p>
+                <?php endif; ?>
             </td>
         </tr>
     </table>
@@ -660,6 +668,58 @@ function karsabt_core_render_order_meta_box($post) {
     <?php
 }
 
+
+/** فهرست مدارک الزامی که هنوز حداقل یک نسخه تأییدشده ندارند. */
+function karsabt_core_missing_required_documents($order_id) {
+    if (!function_exists('karsabt_docs_checklists') || !function_exists('karsabt_docs_review_states')) {
+        return array('بررسی مدارک در دسترس نیست؛ ماژول مدارک باید فعال باشد.');
+    }
+    $service = get_post_meta($order_id, '_karsabt_service', true);
+    $checklists = karsabt_docs_checklists();
+    $items = isset($checklists[$service]) && is_array($checklists[$service]) ? $checklists[$service] : array();
+    $docs = get_post_meta($order_id, '_karsabt_documents', true);
+    $docs = is_array($docs) ? $docs : array();
+    $missing = array();
+    foreach ($items as $item) {
+        if (empty($item['required']) || empty($item['key'])) { continue; }
+        $approved = false;
+        foreach ($docs as $doc) {
+            if (isset($doc['checklist_key'], $doc['status']) && hash_equals((string) $item['key'], (string) $doc['checklist_key']) && 'approved' === $doc['status']) {
+                $approved = true; break;
+            }
+        }
+        if (!$approved) { $missing[] = (string) ($item['title'] ?? 'مدرک الزامی'); }
+    }
+    return $missing;
+}
+
+/** کنترل مرکزی تغییر متای وضعیت؛ مسیرهای update_post_meta نیز از این کنترل عبور می‌کنند. */
+function karsabt_core_guard_completed_status_meta($check, $object_id, $meta_key, $meta_value, $extra = null) {
+    if ('_karsabt_order_status' !== $meta_key || 'completed' !== $meta_value || 'karsabt_order' !== get_post_type($object_id)) { return $check; }
+    $missing = karsabt_core_missing_required_documents($object_id);
+    if ($missing) {
+        $user_id = get_current_user_id();
+        if ($user_id) { set_transient('karsabt_blocked_status_' . $user_id, array('order_id'=>(int) $object_id, 'missing'=>$missing), 5 * MINUTE_IN_SECONDS); }
+        return false;
+    }
+    return $check;
+}
+add_filter('update_post_metadata', 'karsabt_core_guard_completed_status_meta', 10, 5);
+add_filter('add_post_metadata', 'karsabt_core_guard_completed_status_meta', 10, 5);
+
+function karsabt_core_status_guard_admin_notice() {
+    $user_id = get_current_user_id();
+    $notice = get_transient('karsabt_blocked_status_' . $user_id);
+    if (!$notice || !current_user_can('edit_karsabt_orders')) { return; }
+    delete_transient('karsabt_blocked_status_' . $user_id);
+    $items = isset($notice['missing']) && is_array($notice['missing']) ? $notice['missing'] : array();
+    echo '<div class="notice notice-error"><p><strong>تغییر وضعیت به «انجام‌شده» انجام نشد.</strong> مدارک الزامی زیر باید بارگذاری و توسط مدیر تأیید شوند:</p><ul>';
+    foreach ($items as $item) { echo '<li>' . esc_html($item) . '</li>'; }
+    echo '</ul></div>';
+}
+add_action('admin_notices', 'karsabt_core_status_guard_admin_notice');
+
+
 function karsabt_core_save_order_meta($post_id) {
     if (
         !isset($_POST['karsabt_save_order_nonce']) ||
@@ -697,16 +757,20 @@ function karsabt_core_save_order_meta($post_id) {
     }
 
     if (isset($statuses[$status]) && $status !== $old_status) {
-        update_post_meta($post_id, '_karsabt_order_status', $status);
-        $history = get_post_meta($post_id, '_karsabt_status_history', true);
-        $history = is_array($history) ? $history : array();
-        $history[] = array('status' => $status, 'label' => $statuses[$status], 'time' => current_time('mysql'), 'user_id' => get_current_user_id());
-        update_post_meta($post_id, '_karsabt_status_history', $history);
-        $activity = get_post_meta($post_id, '_karsabt_activity_log', true);
-        $activity = is_array($activity) ? $activity : array();
-        $activity[] = array('type' => 'status', 'message' => 'وضعیت به «' . $statuses[$status] . '» تغییر کرد.', 'user_id' => get_current_user_id(), 'time' => current_time('mysql'));
-        update_post_meta($post_id, '_karsabt_activity_log', $activity);
-        do_action('karsabt_order_status_changed', $post_id, $old_status, $status);
+        $missing_required = ('completed' === $status) ? karsabt_core_missing_required_documents($post_id) : array();
+        if (!$missing_required && update_post_meta($post_id, '_karsabt_order_status', $status)) {
+            $history = get_post_meta($post_id, '_karsabt_status_history', true);
+            $history = is_array($history) ? $history : array();
+            $history[] = array('status' => $status, 'label' => $statuses[$status], 'time' => current_time('mysql'), 'user_id' => get_current_user_id());
+            update_post_meta($post_id, '_karsabt_status_history', $history);
+            $activity = get_post_meta($post_id, '_karsabt_activity_log', true);
+            $activity = is_array($activity) ? $activity : array();
+            $activity[] = array('type' => 'status', 'message' => 'وضعیت به «' . $statuses[$status] . '» تغییر کرد.', 'user_id' => get_current_user_id(), 'time' => current_time('mysql'));
+            update_post_meta($post_id, '_karsabt_activity_log', $activity);
+            do_action('karsabt_order_status_changed', $post_id, $old_status, $status);
+        } elseif ($missing_required) {
+            set_transient('karsabt_blocked_status_' . get_current_user_id(), array('order_id'=>(int) $post_id, 'missing'=>$missing_required), 5 * MINUTE_IN_SECONDS);
+        }
     }
 
     if (isset($_POST['karsabt_internal_note'])) {
