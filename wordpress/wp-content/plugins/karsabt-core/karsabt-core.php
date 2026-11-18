@@ -2,7 +2,7 @@
 /**
  * Plugin Name: کارثبت | هسته سامانه
  * Description: مدیریت درخواست‌های خدمات کارثبت و فرم ثبت سفارش امن.
- * Version: 0.23.0
+ * Version: 0.24.0
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Karsabt
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('KARSABT_CORE_VERSION', '0.23.0');
+define('KARSABT_CORE_VERSION', '0.24.0');
 
 function karsabt_core_enqueue_styles() {
     wp_enqueue_style('karsabt-core-forms', plugin_dir_url(__FILE__) . 'assets/css/forms.css', array(), KARSABT_CORE_VERSION);
@@ -114,6 +114,26 @@ function karsabt_core_services() {
         'other'         => 'خدمات اداری و اینترنتی',
     );
 }
+
+/**
+ * مراحل اجرایی پیشنهادی برای هر نوع خدمت؛ مدیر می‌تواند بعداً این الگوها را توسعه دهد.
+ */
+function karsabt_core_workflow_phases() {
+    return array(
+        'company' => array('intake'=>'دریافت اطلاعات','review'=>'بررسی مدارک و اطلاعات','name'=>'بررسی نام و موضوع','draft'=>'تهیه و کنترل اسناد','submit'=>'ارسال و پیگیری ثبت','delivery'=>'تحویل نتیجه'),
+        'trademark' => array('intake'=>'دریافت اطلاعات و نمونه برند','review'=>'بررسی اولیه و مدارک','search'=>'استعلام و بررسی مشابهت','draft'=>'تهیه و تکمیل پرونده','submit'=>'ثبت و پیگیری اظهارنامه','delivery'=>'تحویل نتیجه'),
+        'business' => array('intake'=>'دریافت اطلاعات محل و فعالیت','review'=>'بررسی مدارک','requirements'=>'بررسی شرایط و الزامات','submit'=>'ثبت درخواست و پیگیری','inspection'=>'پیگیری بازدید یا استعلام','delivery'=>'تحویل نتیجه'),
+        'home_business' => array('intake'=>'دریافت اطلاعات فعالیت','review'=>'بررسی مدارک','requirements'=>'بررسی شرایط مجوز','submit'=>'ثبت و پیگیری درخواست','delivery'=>'تحویل نتیجه'),
+        'online_cafe' => array('intake'=>'دریافت درخواست','review'=>'بررسی اطلاعات و فایل‌ها','execution'=>'انجام خدمت','quality'=>'کنترل نهایی','delivery'=>'تحویل به مشتری'),
+        'other' => array('intake'=>'دریافت درخواست','review'=>'بررسی نیاز و مدارک','execution'=>'انجام خدمت','quality'=>'کنترل نتیجه','delivery'=>'تحویل به مشتری'),
+    );
+}
+
+function karsabt_core_get_workflow_phases($service) {
+    $all = karsabt_core_workflow_phases();
+    return isset($all[$service]) ? $all[$service] : array();
+}
+
 
 function karsabt_core_statuses() {
     return array(
@@ -628,6 +648,27 @@ function karsabt_core_render_order_meta_box($post) {
                 <?php endif; ?>
             </td>
         </tr>
+        <?php
+        $workflow_phases = karsabt_core_get_workflow_phases($service);
+        $current_phase = get_post_meta($post->ID, '_karsabt_workflow_phase', true);
+        if (!$current_phase || !isset($workflow_phases[$current_phase])) {
+            $phase_keys = array_keys($workflow_phases);
+            $current_phase = $phase_keys ? $phase_keys[0] : '';
+        }
+        ?>
+        <?php if ($workflow_phases) : ?>
+        <tr>
+            <th><label for="karsabt-workflow-phase">مرحله اجرایی پرونده</label></th>
+            <td>
+                <select name="karsabt_workflow_phase" id="karsabt-workflow-phase">
+                    <?php foreach ($workflow_phases as $phase_key => $phase_label) : ?>
+                        <option value="<?php echo esc_attr($phase_key); ?>" <?php selected($current_phase, $phase_key); ?>><?php echo esc_html($phase_label); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="description">این مرحله جزئیات پیشرفت کار را مشخص می‌کند و مستقل از وضعیت کلی درخواست است.</p>
+            </td>
+        </tr>
+        <?php endif; ?>
     </table>
     <hr>
     <h3>تاریخچه وضعیت درخواست</h3>
@@ -734,6 +775,32 @@ function karsabt_core_save_order_meta($post_id) {
     $statuses = karsabt_core_statuses();
 
     $old_status = get_post_meta($post_id, '_karsabt_order_status', true);
+
+    $service = get_post_meta($post_id, '_karsabt_service', true);
+    $workflow_phases = karsabt_core_get_workflow_phases($service);
+    if (isset($_POST['karsabt_workflow_phase'])) {
+        $new_phase = sanitize_key(wp_unslash($_POST['karsabt_workflow_phase']));
+        $old_phase = get_post_meta($post_id, '_karsabt_workflow_phase', true);
+        if (isset($workflow_phases[$new_phase]) && $new_phase !== $old_phase) {
+            update_post_meta($post_id, '_karsabt_workflow_phase', $new_phase);
+            $phase_history = get_post_meta($post_id, '_karsabt_phase_history', true);
+            $phase_history = is_array($phase_history) ? $phase_history : array();
+            $phase_history[] = array(
+                'phase' => $new_phase,
+                'label' => $workflow_phases[$new_phase],
+                'previous_phase' => $old_phase,
+                'time' => current_time('mysql'),
+                'user_id' => get_current_user_id(),
+            );
+            update_post_meta($post_id, '_karsabt_phase_history', $phase_history);
+            $activity = get_post_meta($post_id, '_karsabt_activity_log', true);
+            $activity = is_array($activity) ? $activity : array();
+            $activity[] = array('type'=>'phase', 'message'=>'مرحله پرونده به «' . $workflow_phases[$new_phase] . '» تغییر کرد.', 'user_id'=>get_current_user_id(), 'time'=>current_time('mysql'));
+            update_post_meta($post_id, '_karsabt_activity_log', $activity);
+            do_action('karsabt_order_phase_changed', $post_id, $old_phase, $new_phase);
+        }
+    }
+
     $old_assignee = absint(get_post_meta($post_id, '_karsabt_assigned_user_id', true));
     $new_assignee = $old_assignee;
     if (current_user_can('manage_options') && isset($_POST['karsabt_assigned_user_id'])) {
