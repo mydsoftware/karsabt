@@ -2,7 +2,7 @@
 /**
  * Plugin Name: کارثبت | هسته سامانه
  * Description: مدیریت درخواست‌های خدمات کارثبت و فرم ثبت سفارش امن.
- * Version: 0.25.0
+ * Version: 0.26.0
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Karsabt
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('KARSABT_CORE_VERSION', '0.25.0');
+define('KARSABT_CORE_VERSION', '0.26.0');
 
 function karsabt_core_enqueue_styles() {
     wp_enqueue_style('karsabt-core-forms', plugin_dir_url(__FILE__) . 'assets/css/forms.css', array(), KARSABT_CORE_VERSION);
@@ -631,6 +631,13 @@ function karsabt_core_render_order_meta_box($post) {
         </tr>
         <?php endif; ?>
         <tr>
+            <th><label for="karsabt-due-date">مهلت هدف انجام</label></th>
+            <td>
+                <input type="date" id="karsabt-due-date" name="karsabt_due_date" value="<?php echo esc_attr(get_post_meta($post->ID, '_karsabt_due_date', true)); ?>">
+                <p class="description">تاریخ هدف داخلی/اطلاع‌رسانی است و تضمین زمان قانونی یا زمان قطعی مرجع صادرکننده نیست. خالی‌گذاشتن آن یعنی مهلتی تعیین نشده است.</p>
+            </td>
+        </tr>
+        <tr>
             <th><label for="karsabt-order-status">وضعیت درخواست</label></th>
             <td>
                 <select name="karsabt_order_status" id="karsabt-order-status">
@@ -760,6 +767,31 @@ function karsabt_core_status_guard_admin_notice() {
 }
 add_action('admin_notices', 'karsabt_core_status_guard_admin_notice');
 
+/** هشدار پرونده‌های باز با مهلت گذشته؛ کارشناسان فقط پرونده‌های تخصیص‌یافته به خود را می‌بینند. */
+function karsabt_core_overdue_admin_notice() {
+    if (!is_admin() || !current_user_can('edit_karsabt_orders')) { return; }
+    $today = wp_date('Y-m-d');
+    $meta_query = array(
+        'relation' => 'AND',
+        array('key'=>'_karsabt_due_date', 'value'=>$today, 'compare'=>'<', 'type'=>'DATE'),
+        array('key'=>'_karsabt_order_status', 'value'=>array('completed','rejected'), 'compare'=>'NOT IN'),
+    );
+    if (!current_user_can('manage_options')) {
+        $meta_query[] = array('key'=>'_karsabt_assigned_user_id', 'value'=>get_current_user_id(), 'compare'=>'=', 'type'=>'NUMERIC');
+    }
+    $overdue = new WP_Query(array(
+        'post_type'=>'karsabt_order', 'post_status'=>'private', 'posts_per_page'=>1,
+        'fields'=>'ids', 'no_found_rows'=>false, 'meta_query'=>$meta_query,
+    ));
+    $count = (int) $overdue->found_posts;
+    if ($count > 0) {
+        $url = admin_url('edit.php?post_type=karsabt_order');
+        echo '<div class="notice notice-warning"><p><strong>هشدار مهلت کارثبت:</strong> ' . esc_html(number_format_i18n($count)) . ' پرونده باز از مهلت هدف عبور کرده است. <a href="' . esc_url($url) . '">بررسی پرونده‌ها</a></p></div>';
+    }
+}
+add_action('admin_notices', 'karsabt_core_overdue_admin_notice');
+
+
 
 function karsabt_core_save_order_meta($post_id) {
     if (
@@ -769,6 +801,26 @@ function karsabt_core_save_order_meta($post_id) {
         !current_user_can('edit_post', $post_id)
     ) {
         return;
+    }
+
+    // مهلت هدف؛ فقط تاریخ معتبر ISO ویرایش می‌شود.
+    if (isset($_POST['karsabt_due_date'])) {
+        $due_date = sanitize_text_field(wp_unslash($_POST['karsabt_due_date']));
+        $valid_due_date = '' === $due_date;
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $due_date, $date_parts)) {
+            $valid_due_date = checkdate((int) $date_parts[2], (int) $date_parts[3], (int) $date_parts[1]);
+        }
+        if ($valid_due_date) {
+            $old_due_date = get_post_meta($post_id, '_karsabt_due_date', true);
+            if ($due_date !== $old_due_date) {
+                if ('' === $due_date) { delete_post_meta($post_id, '_karsabt_due_date'); }
+                else { update_post_meta($post_id, '_karsabt_due_date', $due_date); }
+                $activity = get_post_meta($post_id, '_karsabt_activity_log', true);
+                $activity = is_array($activity) ? $activity : array();
+                $activity[] = array('type'=>'deadline', 'message'=>'' === $due_date ? 'مهلت هدف حذف شد.' : 'مهلت هدف به ' . $due_date . ' تغییر کرد.', 'user_id'=>get_current_user_id(), 'time'=>current_time('mysql'));
+                update_post_meta($post_id, '_karsabt_activity_log', $activity);
+            }
+        }
     }
 
     $status = isset($_POST['karsabt_order_status']) ? sanitize_key(wp_unslash($_POST['karsabt_order_status'])) : 'new';
