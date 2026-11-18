@@ -68,10 +68,10 @@ function karsabt_service_forms_render_fields() {
             $required = !empty($field['required']);
             $label = '<label for="' . esc_attr($id) . '">' . esc_html($field['label']) . ($required ? ' *' : '') . '</label>';
             if ('textarea' === $field['type']) {
-                $control = '<textarea id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" rows="3" maxlength="' . esc_attr($field['max']) . '"' . ($required ? ' required' : '') . '></textarea>';
+                $control = '<textarea id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" rows="3" maxlength="' . esc_attr($field['max']) . '"' . ($required ? ' required' : '') . ' disabled></textarea>';
             } else {
                 $type = 'number' === $field['type'] ? 'number' : 'text';
-                $control = '<input id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" type="' . esc_attr($type) . '" maxlength="' . esc_attr($field['max']) . '"' . ('number' === $type ? ' min="' . esc_attr($field['min']) . '" max="' . esc_attr($field['max']) . '"' : '') . ($required ? ' required' : '') . '>';
+                $control = '<input id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" type="' . esc_attr($type) . '" maxlength="' . esc_attr($field['max']) . '"' . ('number' === $type ? ' min="' . esc_attr($field['min']) . '" max="' . esc_attr($field['max']) . '"' : '') . ($required ? ' required' : '') . ' disabled>'';
             }
             $html .= '<p>' . $label . $control . '</p>';
         }
