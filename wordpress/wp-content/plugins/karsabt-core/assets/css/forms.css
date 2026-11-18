@@ -4,3 +4,19 @@
 .karsabt-dashboard-table-wrap{width:100%;overflow-x:auto;margin:18px 0}.karsabt-dashboard-table{width:100%;border-collapse:collapse;min-width:520px;background:#fff}.karsabt-dashboard-table th,.karsabt-dashboard-table td{padding:12px;text-align:right;border-bottom:1px solid #e2e8f0}.karsabt-dashboard-table th{background:#f5f8fc;color:#10264c}.karsabt-dashboard-table td bdi{direction:ltr;unicode-bidi:isolate;white-space:nowrap}.karsabt-customer-dashboard{max-width:100%;margin:20px auto}
 
 .karsabt-customer-auth{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:20px;align-items:start}.karsabt-customer-auth .karsabt-order-form{min-width:0;padding:18px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}.karsabt-customer-auth h3{margin:0 0 14px;color:#10264c}.karsabt-customer-auth input[type=password],.karsabt-customer-auth input[type=tel]{width:100%;box-sizing:border-box}
+
+/* پیشرفت مرحله‌ای پرونده در پنل مشتری */
+.karsabt-customer-progress{margin:24px 0;padding:18px;border:1px solid #dce7f7;border-radius:14px;background:#fff}
+.karsabt-customer-progress h4,.karsabt-customer-progress h5{margin:0 0 12px;color:#10264c}
+.karsabt-progress-status,.karsabt-progress-current{margin:8px 0 14px;padding:10px 12px;border-radius:9px;background:#f5f8fc;color:#243b5a}
+.karsabt-progress-status.is-completed{background:#eaf8ef;color:#176534}
+.karsabt-progress-status.is-rejected{background:#fff0f0;color:#9b1c1c}
+.karsabt-progress-steps{list-style:none;counter-reset:karsabt-step;margin:14px 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
+.karsabt-progress-step{counter-increment:karsabt-step;position:relative;min-height:54px;padding:12px 42px 12px 10px;border:1px solid #dbe3ee;border-radius:10px;background:#f8fafc;color:#64748b}
+.karsabt-progress-step:before{content:counter(karsabt-step);position:absolute;right:10px;top:10px;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:#e2e8f0;color:#334155;font-weight:700}
+.karsabt-progress-step.is-completed{border-color:#a7d8b7;background:#f1fbf4;color:#176534}
+.karsabt-progress-step.is-completed:before{content:"✓";background:#d5f0de;color:#176534}
+.karsabt-progress-step.is-current{border-color:#7ab7eb;background:#eff7ff;color:#124b7b;font-weight:700}
+.karsabt-progress-step.is-current:before{background:#0876d8;color:#fff}
+.karsabt-phase-history{padding-right:22px}
+.karsabt-phase-history li{margin:8px 0}
