@@ -1,0 +1,22 @@
+.karsabt-order-form{max-width:760px;margin:24px auto 0;padding:24px;background:#fff;border:1px solid #dce7f7;border-radius:20px;box-shadow:0 12px 30px rgba(18,57,112,.08);display:grid;grid-template-columns:1fr 1fr;gap:14px}.karsabt-order-form p{margin:0;display:flex;flex-direction:column;gap:6px}.karsabt-order-form p:nth-of-type(4),.karsabt-order-form p.karsabt-form-privacy{grid-column:1/-1}.karsabt-order-form label{font-weight:700;color:#10264c}.karsabt-order-form input,.karsabt-order-form select,.karsabt-order-form textarea{width:100%;padding:12px;border:1px solid #cbd8e9;border-radius:10px;background:#fff;font:inherit}.karsabt-order-form button{border:0;border-radius:999px;padding:12px 24px;background:#0876d8;color:#fff;font:inherit;font-weight:800;cursor:pointer}.karsabt-form-notice{max-width:760px;margin:18px auto 0;padding:12px 16px;border-radius:10px}.karsabt-form-success{background:#eaf8ef;color:#176534}.karsabt-form-error{background:#fff0f0;color:#9b1c1c}.karsabt-order-form .karsabt-form-privacy{font-size:12px;color:#64748b}@media(max-width:600px){.karsabt-order-form{grid-template-columns:1fr;padding:16px}.karsabt-order-form p:nth-of-type(4),.karsabt-order-form p.karsabt-form-privacy{grid-column:auto}}
+.karsabt-tracking-result{max-width:760px;margin:18px auto;padding:18px 20px;border:1px solid #b7dfc5;border-radius:14px;background:#f1fbf4;color:#174b2b}.karsabt-tracking-result p{margin:6px 0}.karsabt-tracking-form{margin-top:18px}.karsabt-form-success strong{display:inline-block;direction:ltr;unicode-bidi:isolate;padding:8px 12px;border:1px dashed currentColor;border-radius:8px;letter-spacing:1px;font-size:1.1em}
+
+.karsabt-dashboard-table-wrap{width:100%;overflow-x:auto;margin:18px 0}.karsabt-dashboard-table{width:100%;border-collapse:collapse;min-width:520px;background:#fff}.karsabt-dashboard-table th,.karsabt-dashboard-table td{padding:12px;text-align:right;border-bottom:1px solid #e2e8f0}.karsabt-dashboard-table th{background:#f5f8fc;color:#10264c}.karsabt-dashboard-table td bdi{direction:ltr;unicode-bidi:isolate;white-space:nowrap}.karsabt-customer-dashboard{max-width:100%;margin:20px auto}
+
+.karsabt-customer-auth{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:20px;align-items:start}.karsabt-customer-auth .karsabt-order-form{min-width:0;padding:18px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}.karsabt-customer-auth h3{margin:0 0 14px;color:#10264c}.karsabt-customer-auth input[type=password],.karsabt-customer-auth input[type=tel]{width:100%;box-sizing:border-box}
+
+/* پیشرفت مرحله‌ای پرونده در پنل مشتری */
+.karsabt-customer-progress{margin:24px 0;padding:18px;border:1px solid #dce7f7;border-radius:14px;background:#fff}
+.karsabt-customer-progress h4,.karsabt-customer-progress h5{margin:0 0 12px;color:#10264c}
+.karsabt-progress-status,.karsabt-progress-current{margin:8px 0 14px;padding:10px 12px;border-radius:9px;background:#f5f8fc;color:#243b5a}
+.karsabt-progress-status.is-completed{background:#eaf8ef;color:#176534}
+.karsabt-progress-status.is-rejected{background:#fff0f0;color:#9b1c1c}
+.karsabt-progress-steps{list-style:none;counter-reset:karsabt-step;margin:14px 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
+.karsabt-progress-step{counter-increment:karsabt-step;position:relative;min-height:54px;padding:12px 42px 12px 10px;border:1px solid #dbe3ee;border-radius:10px;background:#f8fafc;color:#64748b}
+.karsabt-progress-step:before{content:counter(karsabt-step);position:absolute;right:10px;top:10px;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:#e2e8f0;color:#334155;font-weight:700}
+.karsabt-progress-step.is-completed{border-color:#a7d8b7;background:#f1fbf4;color:#176534}
+.karsabt-progress-step.is-completed:before{content:"✓";background:#d5f0de;color:#176534}
+.karsabt-progress-step.is-current{border-color:#7ab7eb;background:#eff7ff;color:#124b7b;font-weight:700}
+.karsabt-progress-step.is-current:before{background:#0876d8;color:#fff}
+.karsabt-phase-history{padding-right:22px}
+.karsabt-phase-history li{margin:8px 0}
