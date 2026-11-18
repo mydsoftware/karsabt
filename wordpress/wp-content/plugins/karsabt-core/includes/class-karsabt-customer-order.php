@@ -40,6 +40,14 @@ function karsabt_customer_order_detail_portal() {
     echo '<dt>خدمت</dt><dd>' . esc_html($services[$service_key] ?? '—') . '</dd>';
     echo '<dt>وضعیت فعلی</dt><dd>' . esc_html($statuses[$status_key] ?? 'جدید') . '</dd>';
     echo '<dt>تاریخ ثبت</dt><dd>' . esc_html(mysql2date('Y/m/d H:i', $order->post_date)) . '</dd>';
+    $due_date = get_post_meta($order_id, '_karsabt_due_date', true);
+    if (is_string($due_date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $due_date)) {
+        $due_timestamp = strtotime($due_date . ' 00:00:00');
+        $today_timestamp = strtotime(wp_date('Y-m-d') . ' 00:00:00');
+        $due_label = mysql2date('Y/m/d', $due_date);
+        $due_state = ('completed' === $status_key) ? 'مهلت هدف ثبت‌شده' : (($due_timestamp < $today_timestamp && !in_array($status_key, array('completed','rejected'), true)) ? 'از مهلت هدف عبور کرده' : 'مهلت هدف');
+        echo '<dt>' . esc_html($due_state) . '</dt><dd>' . esc_html($due_label) . '</dd>';
+    }
     echo '</dl>';
 
     // پیشرفت مرحله‌ای؛ داده فقط برای مالک درخواست و پس از کنترل مالکیت بالا خوانده می‌شود.
