@@ -70,6 +70,7 @@ function karsabt_staff_render_dashboard() {
         $history = get_post_meta($assigned_id, '_karsabt_status_history', true);
         if (!is_array($history)) { continue; }
         $first_completion = null;
+        $completed_in_month = false;
         foreach ($history as $event) {
             if (
                 'completed' === ($event['status'] ?? '') &&
@@ -78,13 +79,14 @@ function karsabt_staff_render_dashboard() {
             ) {
                 $event_time = (string) $event['time'];
                 if (0 === strpos($event_time, $month_key . '-')) {
-                    $completed_this_month++;
+                    $completed_in_month = true;
                 }
                 if (null === $first_completion || strcmp($event_time, $first_completion) < 0) {
                     $first_completion = $event_time;
                 }
             }
         }
+        if ($completed_in_month) { $completed_this_month++; }
         if ($first_completion) {
             $created = get_post_field('post_date', $assigned_id);
             $start_ts = strtotime($created);
