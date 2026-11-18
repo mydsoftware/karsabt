@@ -60,7 +60,7 @@ function karsabt_docs_checklists() {
             if ('' === ltrim($line, '!')) { continue; }
             $required = '!' === substr($line, 0, 1);
             $title = sanitize_text_field($required ? substr($line, 1) : $line);
-            if ('' !== $title) { $result[$service][] = array('key'=>sanitize_title($title), 'title'=>$title, 'required'=>$required); }
+            if ('' !== $title) { $result[$service][] = array('key'=>substr(hash('sha256', $title), 0, 16), 'title'=>$title, 'required'=>$required); }
         }
     }
     return $result;
@@ -193,6 +193,14 @@ function karsabt_docs_upload_handler() {
     if (!isset($allowed[$mime])) { wp_die('فقط فایل PDF، JPG و PNG پذیرفته می‌شود.', '', array('response'=>400)); }
     $category = sanitize_key(wp_unslash($_POST['category'] ?? ''));
     if (!isset(karsabt_docs_categories()[$category])) { wp_die('دسته‌بندی معتبر نیست.', '', array('response'=>400)); }
+    $checklist_key = sanitize_text_field(wp_unslash($_POST['checklist_key'] ?? ''));
+    $service = get_post_meta($order_id, '_karsabt_service', true);
+    $valid_item = null;
+    foreach ((karsabt_docs_checklists()[$service] ?? array()) as $item) {
+        if ($item['key'] === $checklist_key) { $valid_item = $item; break; }
+    }
+    if ('' !== $checklist_key && !$valid_item) { wp_die('مدرک انتخاب‌شده معتبر نیست.', '', array('response'=>400)); }
+
     $id = bin2hex(random_bytes(16));
     $filename = $id . '.' . $allowed[$mime];
     $destination = $dir . '/' . $filename;
@@ -201,13 +209,6 @@ function karsabt_docs_upload_handler() {
 
     $docs = get_post_meta($order_id, '_karsabt_documents', true);
     $docs = is_array($docs) ? $docs : array();
-    $checklist_key = sanitize_title(wp_unslash($_POST['checklist_key'] ?? ''));
-    $service = get_post_meta($order_id, '_karsabt_service', true);
-    $valid_item = null;
-    foreach ((karsabt_docs_checklists()[$service] ?? array()) as $item) {
-        if ($item['key'] === $checklist_key) { $valid_item = $item; break; }
-    }
-    if ('' !== $checklist_key && !$valid_item) { wp_die('مدرک انتخاب‌شده معتبر نیست.', '', array('response'=>400)); }
     $docs[] = array('id'=>$id,'file'=>$filename,'name'=>sanitize_file_name($file['name']),'checklist_key'=>$valid_item ? $valid_item['key'] : '', 'checklist_title'=>$valid_item ? $valid_item['title'] : '', 'mime'=>$mime,'size'=>(int)$file['size'],'category'=>$category,'status'=>'pending','admin_note'=>'','uploaded_at'=>current_time('mysql'),'user_id'=>get_current_user_id());
     if (!update_post_meta($order_id, '_karsabt_documents', $docs)) {
         if (is_file($destination)) { @unlink($destination); }
