@@ -40,8 +40,8 @@ function karsabt_custom_brand_styles() {
     $primary = sanitize_hex_color(get_theme_mod('karsabt_brand_color', '#0876d8'));
     $navy = sanitize_hex_color(get_theme_mod('karsabt_navy_color', '#10264c'));
     $css = '';
-    if ($primary) { $css .= ':root{--blue:' . $primary . ';}'; }
-    if ($navy) { $css .= ':root{--navy:' . $navy . ';}'; }
+    if ($primary) { $css .= ':root{--blue:' . $primary . ';--ks-color-primary:' . $primary . ';}'; }
+    if ($navy) { $css .= ':root{--navy:' . $navy . ';--ks-color-navy:' . $navy . ';}'; }
     if ($css) { wp_add_inline_style('karsabt-design-system', $css); }
 }
 add_action('wp_enqueue_scripts', 'karsabt_custom_brand_styles', 20);
