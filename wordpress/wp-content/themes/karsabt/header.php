@@ -9,7 +9,18 @@
 <?php wp_body_open(); ?>
 <a class="skip-link" href="#main-content">رفتن به محتوای اصلی</a>
 <?php if (!function_exists('elementor_theme_do_location') || !elementor_theme_do_location('header')) : ?>
-<div class="topbar"><div class="container topbar-inner"><span>📍 دزفول، خوزستان</span><span>✉ info@karsabt.ir</span><span>خدمات ثبتی و اداری آنلاین</span></div></div>
+<?php
+$contact_location = karsabt_contact_value('karsabt_contact_location');
+$contact_email = karsabt_contact_value('karsabt_contact_email');
+$contact_phone = karsabt_contact_value('karsabt_contact_phone');
+if ($contact_location || $contact_email || $contact_phone) :
+?>
+<div class="topbar"><div class="container topbar-inner">
+<?php if ($contact_location) : ?><span>📍 <?php echo esc_html($contact_location); ?></span><?php endif; ?>
+<?php if ($contact_email) : ?><span>✉ <a href="mailto:<?php echo esc_attr($contact_email); ?>"><?php echo esc_html($contact_email); ?></a></span><?php endif; ?>
+<?php if ($contact_phone) : ?><span>☎ <a href="tel:<?php echo esc_attr(preg_replace('/[^0-9+]/', '', $contact_phone)); ?>"><?php echo esc_html($contact_phone); ?></a></span><?php endif; ?>
+</div></div>
+<?php endif; ?>
 <header class="site-header">
     <div class="container nav-wrap">
         <a class="brand" href="<?php echo esc_url(home_url('/')); ?>" aria-label="صفحه اصلی کارثبت">
