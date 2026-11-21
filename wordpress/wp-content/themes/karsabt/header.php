@@ -8,6 +8,7 @@
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 <a class="skip-link" href="#main-content">رفتن به محتوای اصلی</a>
+<?php if (!function_exists('elementor_theme_do_location') || !elementor_theme_do_location('header')) : ?>
 <div class="topbar"><div class="container topbar-inner"><span>📍 دزفول، خوزستان</span><span>✉ info@karsabt.ir</span><span>خدمات ثبتی و اداری آنلاین</span></div></div>
 <header class="site-header">
     <div class="container nav-wrap">
@@ -31,3 +32,4 @@
         <a class="btn header-cta" href="<?php echo esc_url(home_url('/#contact')); ?>">ثبت سفارش آنلاین ←</a>
     </div>
 </header>
+<?php endif; ?>
