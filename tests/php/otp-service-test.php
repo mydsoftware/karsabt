@@ -86,6 +86,19 @@ $expired['expires_at'] = $GLOBALS['karsabt_test_time'] - 1;
 set_transient($code_key, $expired, 300);
 karsabt_assert('otp_expired' === karsabt_error_code(Karsabt_OTP_Service::verify($mobile, $code)), 'رد کد منقضی‌شده');
 
+$GLOBALS['karsabt_test_transients'] = array();
+karsabt_assert(true === Karsabt_OTP_Service::send($mobile), 'ارسال کد برای آزمون حفظ مهلت');
+$code_key = '';
+foreach (array_keys($GLOBALS['karsabt_test_transients']) as $key) {
+    if (strpos($key, 'karsabt_otp_code_') === 0) { $code_key = $key; break; }
+}
+$before = get_transient($code_key);
+$GLOBALS['karsabt_test_time'] += 30;
+karsabt_assert('invalid_otp' === karsabt_error_code(Karsabt_OTP_Service::verify($mobile, '000000')), 'رد کد اشتباه بدون تمدید مهلت');
+$after = get_transient($code_key);
+karsabt_assert($before['expires_at'] === $after['expires_at'], 'ثابت ماندن زمان انقضای اولیه پس از تلاش ناموفق');
+$GLOBALS['karsabt_test_time'] = time();
+
 
 $GLOBALS['karsabt_test_transients'] = array();
 $GLOBALS['karsabt_test_time'] = time();
