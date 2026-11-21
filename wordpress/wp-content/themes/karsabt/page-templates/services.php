@@ -20,12 +20,12 @@ $is_elementor = get_post_meta(get_queried_object_id(), '_elementor_edit_mode', t
 <?php else : ?>
     <?php
     $services = array(
-        array('🏢', 'ثبت شرکت', 'ثبت انواع شرکت، تنظیم مدارک و پیگیری مراحل قانونی.', 'ثبت شرکت', 'ثبت شرکت'),
-        array('™️', 'ثبت برند', 'انتخاب مسیر مناسب برای ثبت و حفاظت از نام و نشان تجاری.', 'ثبت برند', 'ثبت برند'),
-        array('🪪', 'کارت بازرگانی', 'راهنمایی و پیگیری درخواست کارت بازرگانی.', 'کارت بازرگانی', 'کارت بازرگانی'),
-        array('🏠', 'مجوز مشاغل خانگی', 'راهنمای دریافت مجوز برای راه‌اندازی کسب‌وکار خانگی.', 'مجوز مشاغل خانگی', 'مجوز مشاغل خانگی'),
-        array('🛍️', 'پروانه کسب', 'راهنمایی مراحل دریافت پروانه کسب و مجوزهای صنفی.', 'پروانه کسب', 'پروانه کسب'),
-        array('📋', 'سایر خدمات اداری', 'بررسی درخواست شما و معرفی مسیر انجام امور اداری.', 'سایر خدمات', 'مشاوره خدمات'),
+        array('🏢', 'ثبت شرکت', 'ثبت انواع شرکت، تنظیم مدارک و پیگیری مراحل قانونی.', 'company', 'ثبت شرکت'),
+        array('™️', 'ثبت برند', 'انتخاب مسیر مناسب برای ثبت و حفاظت از نام و نشان تجاری.', 'trademark', 'ثبت برند'),
+        array('🪪', 'کارت بازرگانی', 'راهنمایی و پیگیری درخواست کارت بازرگانی.', 'other', 'کارت بازرگانی'),
+        array('🏠', 'مجوز مشاغل خانگی', 'راهنمای دریافت مجوز برای راه‌اندازی کسب‌وکار خانگی.', 'home_business', 'مجوز مشاغل خانگی'),
+        array('🛍️', 'پروانه کسب', 'راهنمایی مراحل دریافت پروانه کسب و مجوزهای صنفی.', 'business', 'پروانه کسب'),
+        array('📋', 'سایر خدمات اداری', 'بررسی درخواست شما و معرفی مسیر انجام امور اداری.', 'other', 'مشاوره خدمات'),
     );
     ?>
     <section class="ks-services-hero">
@@ -49,7 +49,7 @@ $is_elementor = get_post_meta(get_queried_object_id(), '_elementor_edit_mode', t
                         <span class="ks-service-item__icon" aria-hidden="true"><?php echo esc_html($service[0]); ?></span>
                         <h2><?php echo esc_html($service[1]); ?></h2>
                         <p><?php echo esc_html($service[2]); ?></p>
-                        <a class="ks-service-item__link" href="<?php echo esc_url(add_query_arg('service', rawurlencode($service[3]), home_url('/#contact'))); ?>">
+                        <a class="ks-service-item__link" href="<?php echo esc_url(add_query_arg('service', $service[3], home_url('/#contact'))); ?>">
                             ثبت درخواست <span aria-hidden="true">←</span>
                         </a>
                     </article>
