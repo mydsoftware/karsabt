@@ -29,6 +29,9 @@ $required = array(
     'page-templates/services.php',
     'page-templates/service-detail.php',
     'page-templates/landing-page.php',
+    'page-templates/about.php',
+    'page-templates/contact.php',
+    'page-templates/pricing.php',
 );
 foreach ($required as $file) {
     karsabt_test('وجود فایل ' . $file, is_file($theme . '/' . $file));
@@ -71,6 +74,11 @@ karsabt_test('عدم نمایش اطلاعات تماس خالی در سربرگ
 karsabt_test('الگوی صفحه فرود کمپین', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'ks-landing-request') !== false);
 karsabt_test('فرم سفارش در صفحه فرود', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), '[karsabt_order_form]') !== false);
 karsabt_test('راهنمای صفحات فرود', is_file($theme . '/docs/LANDING-PAGES-FA.md'));
+
+
+karsabt_test('قالب درباره ما', is_file($theme . '/page-templates/about.php'));
+karsabt_test('قالب تماس با ما', is_file($theme . '/page-templates/contact.php') && strpos((string) file_get_contents($theme . '/page-templates/contact.php'), 'karsabt_contact_phone') !== false);
+karsabt_test('قالب تعرفه بدون قیمت ساختگی', is_file($theme . '/page-templates/pricing.php') && strpos((string) file_get_contents($theme . '/page-templates/pricing.php'), 'هزینه و شرایط اجرا') !== false);
 
 $failed = array();
 foreach ($checks as $check) {
