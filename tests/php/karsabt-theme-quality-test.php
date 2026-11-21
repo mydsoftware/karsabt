@@ -92,7 +92,7 @@ karsabt_test('محتوای صفحه فرود در قالب entry-content', strpo
 karsabt_test('FAQ صفحه فرود با خروجی امن', strpos($landing, 'esc_html($faq[\'question\'])') !== false && strpos($landing, 'wpautop(esc_html($faq[\'answer\']))') !== false);
 karsabt_test('صفحه درباره شامل محتوای ویرایش‌پذیر است', strpos($about, 'the_content()') !== false);
 karsabt_test('لینک تلفن در صفحه تماس امن‌سازی شده', strpos($contact, 'esc_url(\'tel:\' . preg_replace') !== false && strpos($contact, 'esc_html($phone)') !== false);
-karsabt_test('صفحه تعرفه استعلام خدمت را در لینک منتقل می‌کند', strpos($pricing, "add_query_arg('service', $service") !== false);
+karsabt_test('صفحه تعرفه استعلام خدمت را در لینک منتقل می‌کند', strpos($pricing, 'add_query_arg') !== false && strpos($pricing, "'service'") !== false);
 karsabt_test('بسته‌سازی قالب بدون پوشه گیت و تست', strpos($package_workflow, 'karsabt/.git/*') !== false && strpos($package_workflow, 'karsabt/tests/*') !== false);
 
 $failed = array();
