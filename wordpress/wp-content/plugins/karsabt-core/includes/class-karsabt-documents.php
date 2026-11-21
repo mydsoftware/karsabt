@@ -222,7 +222,17 @@ add_action('admin_post_karsabt_document_upload', 'karsabt_docs_upload_handler');
 function karsabt_docs_find($order_id, $document_id) {
     $docs = get_post_meta($order_id, '_karsabt_documents', true);
     if (!is_array($docs)) { return array(null, array()); }
-    foreach ($docs as $index=>$doc) { if (hash_equals((string)($doc['id'] ?? ''), (string)$document_id)) { return array($doc, $docs); } }
+    if (!is_string($document_id) || !preg_match('/^[a-f0-9]{32}$/', $document_id)) {
+        return array(null, $docs);
+    }
+    foreach ($docs as $index => $doc) {
+        if (!is_array($doc) || !isset($doc['id']) || !is_string($doc['id'])) {
+            continue;
+        }
+        if (preg_match('/^[a-f0-9]{32}$/', $doc['id']) && hash_equals($doc['id'], $document_id)) {
+            return array($doc, $docs);
+        }
+    }
     return array(null, $docs);
 }
 
