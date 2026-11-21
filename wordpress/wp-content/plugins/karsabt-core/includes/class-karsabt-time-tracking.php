@@ -83,7 +83,7 @@ function karsabt_time_tracking_handle_action() {
     if (!current_user_can('edit_karsabt_order', $post_id)) { wp_die('دسترسی غیرمجاز.'); }
     $action = isset($_POST['time_action']) ? sanitize_key(wp_unslash($_POST['time_action'])) : '';
     $reason = isset($_POST['reason']) ? sanitize_text_field(wp_unslash($_POST['reason'])) : '';
-    $reason = substr($reason,0,200);
+    $reason = function_exists('mb_substr') ? mb_substr($reason, 0, 200, 'UTF-8') : substr($reason, 0, 200);
     $data = karsabt_time_tracking_get($post_id);
     $now = current_time('timestamp', true);
     $allowed = false;
