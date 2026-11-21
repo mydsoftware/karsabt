@@ -2,7 +2,7 @@
 /** قالب نوشته تکی */
 get_header();
 ?>
-<main class="page-content"><div class="container content-layout">
+<main id="main-content" class="page-content"><div class="container content-layout">
   <div class="primary-content">
     <?php while (have_posts()) : the_post(); ?>
       <article <?php post_class('content-card single-post'); ?>>
