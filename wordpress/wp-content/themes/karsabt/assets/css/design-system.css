@@ -153,3 +153,13 @@ input:focus, select:focus, textarea:focus {
 .ks-service-faq__item summary:focus-visible { outline: 3px solid #f59e0b; outline-offset: -3px; }
 .ks-service-faq__answer { padding: 0 1.25rem 1rem; color: var(--ks-color-muted); line-height: 2; }
 .ks-service-faq__answer p { margin: 0; }
+
+
+/* مسیر راهنمای صفحات و دسترس‌پذیری آن */
+.karsabt-breadcrumbs { width: min(var(--ks-content-width), calc(100% - 2rem)); margin: 1rem auto; color: var(--ks-color-muted); font-size: .875rem; }
+.karsabt-breadcrumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .65rem; margin: 0; padding: 0; list-style: none; }
+.karsabt-breadcrumbs li { display: inline-flex; align-items: center; gap: .65rem; }
+.karsabt-breadcrumbs li + li::before { content: "/"; color: #94a3b8; }
+.karsabt-breadcrumbs a { color: var(--ks-color-primary); text-decoration: none; }
+.karsabt-breadcrumbs a:hover { text-decoration: underline; }
+.karsabt-breadcrumbs [aria-current="page"] { color: var(--ks-color-text); font-weight: 700; }
