@@ -6,6 +6,7 @@ on:
     paths:
       - "wordpress/wp-content/themes/karsabt/**"
       - ".github/workflows/karsabt-theme-quality.yml"
+      - "tests/php/karsabt-theme-quality-test.php"
   pull_request:
     paths:
       - "wordpress/wp-content/themes/karsabt/**"
@@ -40,3 +41,7 @@ jobs:
 
       - name: بررسی ساختار theme.json
         run: php -r '$data = json_decode(file_get_contents("wordpress/wp-content/themes/karsabt/theme.json"), true, 512, JSON_THROW_ON_ERROR); if (!is_array($data) || !isset($data["version"])) { fwrite(STDERR, "theme.json structure is invalid\n"); exit(1); } echo "theme.json is valid\n";'
+
+
+      - name: اجرای آزمون‌های ایستای قالب کارثبت
+        run: php tests/php/karsabt-theme-quality-test.php
