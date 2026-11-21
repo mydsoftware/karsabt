@@ -1,0 +1,24 @@
+name: بسته نصب قالب کارثبت
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'karsabt-v*'
+permissions:
+  contents: read
+jobs:
+  package-theme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: دریافت کد
+        uses: actions/checkout@v4
+      - name: ساخت ZIP قابل نصب
+        run: |
+          cd wordpress/wp-content/themes
+          zip -r "$GITHUB_WORKSPACE/karsabt-theme.zip" karsabt -x "karsabt/.git/*" "karsabt/tests/*"
+      - name: بارگذاری بسته نصب
+        uses: actions/upload-artifact@v4
+        with:
+          name: karsabt-theme-installable
+          path: karsabt-theme.zip
+          retention-days: 30
