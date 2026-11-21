@@ -37,6 +37,7 @@ $theme_json = json_decode((string) file_get_contents($theme . '/theme.json'), tr
 karsabt_test('ساختار معتبر theme.json', is_array($theme_json) && isset($theme_json['version']));
 
 $functions = (string) file_get_contents($theme . '/functions.php');
+$readme = (string) file_get_contents($theme . '/README.txt');
 $header = (string) file_get_contents($theme . '/header.php');
 $footer = (string) file_get_contents($theme . '/footer.php');
 $js = (string) file_get_contents($theme . '/assets/js/theme.js');
@@ -53,6 +54,8 @@ karsabt_test('پشتیبانی Escape در منوی موبایل', strpos($js, "
 karsabt_test('پشتیبانی کاهش حرکت', strpos($css, 'prefers-reduced-motion: reduce') !== false);
 karsabt_test('نشانگر تمرکز صفحه‌کلید', strpos($css, 'focus-visible') !== false);
 karsabt_test('داده ساختاریافته Service', strpos($functions, "'@type' => 'Service'") !== false);
+karsabt_test('نمایش مسیر راهنما در برگه و نوشته', strpos($functions, "is_singular(array('page', 'post'))") !== false);
+karsabt_test('مستندات تنظیمات سفارشی‌ساز', is_file($theme . '/docs/CUSTOMIZER-FA.md') && strpos($readme, 'سفارشی‌سازی') !== false);
 karsabt_test('عدم نمایش اطلاعات تماس خالی در سربرگ', strpos($header, 'if ($contact_location || $contact_email || $contact_phone)') !== false);
 
 $failed = array();
