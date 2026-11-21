@@ -15,7 +15,8 @@
 
 ## راه‌اندازی
 راهنمای محیط محلی: [docs/LOCAL-SETUP-FA.md](docs/LOCAL-SETUP-FA.md)  
-راهنمای افزونه: [docs/KARSABT-CORE-FA.md](docs/KARSABT-CORE-FA.md)  
+راهنمای افزونه: [docs/KARSABT-CORE-FA.md](docs/KARSABT-CORE-FA.md)
+راهنمای قالب: [docs/KARSABT-THEME-FA.md](docs/KARSABT-THEME-FA.md)  
 معماری: [docs/PROJECT-ARCHITECTURE-FA.md](docs/PROJECT-ARCHITECTURE-FA.md)
 
 ## نصب قالب و افزونه
