@@ -64,7 +64,7 @@ function karsabt_error_code($result) {
 $mobile = '09123456789';
 karsabt_assert(true === Karsabt_OTP_Service::send($mobile), 'ارسال OTP با درگاه فعال');
 $code = $GLOBALS['karsabt_test_otp_code'];
-karsabt_assert(1 === strlen($code) || 6 === strlen($code), 'تولید کد عددی');
+karsabt_assert(6 === strlen($code) && ctype_digit($code), 'تولید کد شش‌رقمی عددی');
 karsabt_assert('otp_wait' === karsabt_error_code(Karsabt_OTP_Service::send($mobile)), 'جلوگیری از ارسال مجدد در بازه انتظار');
 karsabt_assert(true === Karsabt_OTP_Service::verify($mobile, $code), 'تأیید کد صحیح');
 
