@@ -61,7 +61,8 @@ foreach ($GLOBALS['karsabt_test_transients'] as $key => $value) {
 }
 test_assert(is_array($payload) && 1 === (int) $payload['attempts'], 'ثبت تلاش ناموفق');
 test_assert(true === Karsabt_OTP_Service::verify($mobile, $code), 'پذیرش کد صحیح');
-test_assert(false === Karsabt_OTP_Service::verify($mobile, $code) instanceof WP_Error, 'کد پس از استفاده دوباره قابل استفاده نیست');
+$reuse = Karsabt_OTP_Service::verify($mobile, $code);
+test_assert($reuse instanceof WP_Error, 'کد پس از استفاده دوباره قابل استفاده نیست');
 
 test_assert(true === Karsabt_OTP_Service::send($mobile), 'ارسال کد دوم پس از تأیید قبلی');
 $code_key = '';
