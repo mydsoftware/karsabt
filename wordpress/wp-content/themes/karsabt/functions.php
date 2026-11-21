@@ -6,26 +6,14 @@ function karsabt_setup() {
     add_theme_support('title-tag');
     add_theme_support('post-thumbnails');
     add_theme_support('automatic-feed-links');
-    add_theme_support('custom-logo', array(
-        'height' => 80,
-        'width' => 260,
-        'flex-height' => true,
-        'flex-width' => true,
-    ));
-    add_theme_support('html5', array(
-        'search-form', 'comment-form', 'comment-list', 'gallery',
-        'caption', 'style', 'script',
-    ));
+    add_theme_support('custom-logo', array('height' => 80, 'width' => 260, 'flex-height' => true, 'flex-width' => true));
+    add_theme_support('html5', array('search-form', 'comment-form', 'comment-list', 'gallery', 'caption', 'style', 'script'));
     add_theme_support('responsive-embeds');
     add_theme_support('align-wide');
     add_theme_support('editor-styles');
     add_editor_style('assets/css/editor-style.css');
-    // پشتیبانی پایه از Elementor و امکان استفاده از قالب‌ساز آن.
     add_theme_support('elementor');
-    register_nav_menus(array(
-        'primary' => 'منوی اصلی',
-        'footer' => 'منوی پایین صفحه',
-    ));
+    register_nav_menus(array('primary' => 'منوی اصلی', 'footer' => 'منوی پایین صفحه'));
     add_image_size('karsabt-card', 640, 420, true);
 }
 add_action('after_setup_theme', 'karsabt_setup');
@@ -36,33 +24,19 @@ function karsabt_assets() {
     $script_path = get_template_directory() . '/assets/js/theme.js';
     $style_version = file_exists($style_path) ? (string) filemtime($style_path) : $theme_version;
     $script_version = file_exists($script_path) ? (string) filemtime($script_path) : $theme_version;
-
     wp_enqueue_style('karsabt-style', get_stylesheet_uri(), array(), $style_version);
-
     $design_system_path = get_template_directory() . '/assets/css/design-system.css';
     $design_system_version = file_exists($design_system_path) ? (string) filemtime($design_system_path) : $theme_version;
-    wp_enqueue_style(
-        'karsabt-design-system',
-        get_template_directory_uri() . '/assets/css/design-system.css',
-        array('karsabt-style'),
-        $design_system_version
-    );
-
+    wp_enqueue_style('karsabt-design-system', get_template_directory_uri() . '/assets/css/design-system.css', array('karsabt-style'), $design_system_version);
     wp_enqueue_script('karsabt-main', get_template_directory_uri() . '/assets/js/theme.js', array(), $script_version, true);
 }
 add_action('wp_enqueue_scripts', 'karsabt_assets');
 
-function karsabt_excerpt_length($length) {
-    return 24;
-}
+function karsabt_excerpt_length($length) { return 24; }
 add_filter('excerpt_length', 'karsabt_excerpt_length');
-
-function karsabt_excerpt_more($more) {
-    return '…';
-}
+function karsabt_excerpt_more($more) { return '…'; }
 add_filter('excerpt_more', 'karsabt_excerpt_more');
 
-/** ثبت جایگاه‌های استاندارد برای قالب‌ساز Elementor. */
 function karsabt_register_elementor_locations($elementor_theme_manager) {
     if (is_object($elementor_theme_manager) && method_exists($elementor_theme_manager, 'register_all_core_location')) {
         $elementor_theme_manager->register_all_core_location();
@@ -70,20 +44,143 @@ function karsabt_register_elementor_locations($elementor_theme_manager) {
 }
 add_action('elementor/theme/register_locations', 'karsabt_register_elementor_locations');
 
+/** تشخیص افزونه‌های سئو برای جلوگیری از تولید متادیتای تکراری. */
+function karsabt_has_seo_plugin() {
+    return defined('WPSEO_VERSION') || defined('RANK_MATH_VERSION') ||
+        defined('SEOPRESS_VERSION') || defined('THE_SEO_FRAMEWORK_VERSION') ||
+        defined('AIOSEO_VERSION') || class_exists('\RankMath\\Helper');
+}
 
-/**
- * جعبه پرسش‌های متداول صفحات خدمات.
- * هر خط با قالب «پرسش | پاسخ» ذخیره می‌شود.
- */
-function karsabt_add_faq_meta_box() {
-    add_meta_box(
-        'karsabt-service-faq',
-        'پرسش‌های متداول خدمت',
-        'karsabt_render_faq_meta_box',
-        'page',
-        'normal',
-        'default'
+/** توضیح متای کوتاه و پاک‌سازی‌شده برای صفحه جاری. */
+function karsabt_get_meta_description() {
+    if (is_singular()) {
+        $post = get_queried_object();
+        if ($post instanceof WP_Post) {
+            $description = has_excerpt($post) ? get_the_excerpt($post) : '';
+            if (!$description) {
+                $description = wp_strip_all_tags(strip_shortcodes($post->post_content));
+            }
+            if ($description) {
+                return wp_trim_words(preg_replace('/\\s+/u', ' ', $description), 28, '…');
+            }
+        }
+    }
+    $description = get_bloginfo('description', 'display');
+    return $description ? wp_trim_words(wp_strip_all_tags($description), 28, '…') : '';
+}
+
+function karsabt_output_social_meta() {
+    if (is_admin() || karsabt_has_seo_plugin()) { return; }
+    $description = karsabt_get_meta_description();
+    $title = wp_get_document_title();
+    $url = is_singular() ? get_permalink() : (is_front_page() ? home_url('/') : get_pagenum_link());
+    $image = '';
+    if (is_singular() && has_post_thumbnail()) {
+        $image = get_the_post_thumbnail_url(get_queried_object_id(), 'large');
+    } elseif (has_custom_logo()) {
+        $logo_id = get_theme_mod('custom_logo');
+        $image = $logo_id ? wp_get_attachment_image_url($logo_id, 'full') : '';
+    }
+    if ($description) {
+        echo '<meta name="description" content="' . esc_attr($description) . '">' . "\n";
+    }
+    echo '<meta property="og:type" content="' . (is_singular('post') ? 'article' : 'website') . '">' . "\n";
+    echo '<meta property="og:locale" content="fa_IR">' . "\n";
+    echo '<meta property="og:site_name" content="' . esc_attr(get_bloginfo('name')) . '">' . "\n";
+    echo '<meta property="og:title" content="' . esc_attr($title) . '">' . "\n";
+    echo '<meta property="og:url" content="' . esc_url($url) . '">' . "\n";
+    if ($description) { echo '<meta property="og:description" content="' . esc_attr($description) . '">' . "\n"; }
+    if ($image) { echo '<meta property="og:image" content="' . esc_url($image) . '">' . "\n"; }
+    echo '<meta name="twitter:card" content="' . ($image ? 'summary_large_image' : 'summary') . '">' . "\n";
+    echo '<meta name="twitter:title" content="' . esc_attr($title) . '">' . "\n";
+    if ($description) { echo '<meta name="twitter:description" content="' . esc_attr($description) . '">' . "\n"; }
+    if ($image) { echo '<meta name="twitter:image" content="' . esc_url($image) . '">' . "\n"; }
+}
+add_action('wp_head', 'karsabt_output_social_meta', 2);
+
+/** مسیر راهنما؛ برای نمایش دستی از شورت‌کد [karsabt_breadcrumbs] استفاده کنید. */
+function karsabt_get_breadcrumb_items() {
+    $items = array(array('name' => 'خانه', 'url' => home_url('/')));
+    if (is_front_page()) { return $items; }
+    if (is_singular()) {
+        $post = get_queried_object();
+        if ($post instanceof WP_Post && $post->post_type === 'page') {
+            $ancestors = array_reverse(get_post_ancestors($post));
+            foreach ($ancestors as $ancestor_id) {
+                $items[] = array('name' => get_the_title($ancestor_id), 'url' => get_permalink($ancestor_id));
+            }
+        } elseif ($post instanceof WP_Post && $post->post_type === 'post') {
+            $categories = get_the_category($post->ID);
+            if (!empty($categories)) {
+                $category = $categories[0];
+                $items[] = array('name' => $category->name, 'url' => get_category_link($category->term_id));
+            }
+        }
+        $items[] = array('name' => get_the_title($post), 'url' => get_permalink($post));
+    } elseif (is_category() || is_tag() || is_tax()) {
+        $term = get_queried_object();
+        if ($term && !is_wp_error($term)) { $items[] = array('name' => single_term_title('', false), 'url' => get_term_link($term)); }
+    } elseif (is_search()) {
+        $items[] = array('name' => 'نتایج جستجو', 'url' => get_search_link());
+    } elseif (is_archive()) {
+        $items[] = array('name' => wp_strip_all_tags(get_the_archive_title()), 'url' => get_pagenum_link());
+    } elseif (is_404()) {
+        $items[] = array('name' => 'صفحه پیدا نشد', 'url' => home_url('/'));
+    }
+    return $items;
+}
+
+function karsabt_breadcrumbs_shortcode() {
+    $items = karsabt_get_breadcrumb_items();
+    if (is_front_page() || count($items) < 2) { return ''; }
+    $html = '<nav class="karsabt-breadcrumbs" aria-label="مسیر صفحه"><ol>';
+    $last = count($items) - 1;
+    foreach ($items as $index => $item) {
+        $html .= '<li>';
+        if ($index === $last) {
+            $html .= '<span aria-current="page">' . esc_html($item['name']) . '</span>';
+        } else {
+            $html .= '<a href="' . esc_url($item['url']) . '">' . esc_html($item['name']) . '</a>';
+        }
+        $html .= '</li>';
+    }
+    return $html . '</ol></nav>';
+}
+add_shortcode('karsabt_breadcrumbs', 'karsabt_breadcrumbs_shortcode');
+
+function karsabt_output_seo_schema() {
+    if (is_admin() || karsabt_has_seo_plugin()) { return; }
+    $graph = array();
+    $organization = array(
+        '@type' => 'Organization',
+        '@id' => home_url('/#organization'),
+        'name' => get_bloginfo('name'),
+        'url' => home_url('/'),
     );
+    if (has_custom_logo()) {
+        $logo_id = get_theme_mod('custom_logo');
+        $logo = $logo_id ? wp_get_attachment_image_url($logo_id, 'full') : '';
+        if ($logo) { $organization['logo'] = esc_url_raw($logo); }
+    }
+    $graph[] = $organization;
+
+    $items = karsabt_get_breadcrumb_items();
+    if (count($items) > 1) {
+        $list = array();
+        foreach ($items as $index => $item) {
+            $entry = array('@type' => 'ListItem', 'position' => $index + 1, 'name' => $item['name']);
+            if ($index < count($items) - 1) { $entry['item'] = $item['url']; }
+            $list[] = $entry;
+        }
+        $graph[] = array('@type' => 'BreadcrumbList', 'itemListElement' => $list);
+    }
+    echo "\n<script type=\"application/ld+json\">" . wp_json_encode(array('@context' => 'https://schema.org', '@graph' => $graph), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>\n";
+}
+add_action('wp_head', 'karsabt_output_seo_schema', 20);
+
+/** جعبه پرسش‌های متداول صفحات خدمات؛ هر خط با قالب «پرسش | پاسخ». */
+function karsabt_add_faq_meta_box() {
+    add_meta_box('karsabt-service-faq', 'پرسش‌های متداول خدمت', 'karsabt_render_faq_meta_box', 'page', 'normal', 'default');
 }
 add_action('add_meta_boxes', 'karsabt_add_faq_meta_box');
 
@@ -93,9 +190,7 @@ function karsabt_render_faq_meta_box($post) {
     $lines = array();
     if (is_array($items)) {
         foreach ($items as $item) {
-            if (!empty($item['question']) && !empty($item['answer'])) {
-                $lines[] = $item['question'] . ' | ' . $item['answer'];
-            }
+            if (!empty($item['question']) && !empty($item['answer'])) { $lines[] = $item['question'] . ' | ' . $item['answer']; }
         }
     }
     ?>
@@ -105,74 +200,36 @@ function karsabt_render_faq_meta_box($post) {
 }
 
 function karsabt_save_service_faq($post_id) {
-    if (!isset($_POST['karsabt_service_faq_nonce']) ||
-        !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['karsabt_service_faq_nonce'])), 'karsabt_save_service_faq')) {
-        return;
-    }
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-        return;
-    }
-    if (!current_user_can('edit_page', $post_id)) {
-        return;
-    }
-    if (!isset($_POST['karsabt_service_faq'])) {
-        delete_post_meta($post_id, '_karsabt_service_faq');
-        return;
-    }
-
+    if (!isset($_POST['karsabt_service_faq_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['karsabt_service_faq_nonce'])), 'karsabt_save_service_faq')) { return; }
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
+    if (!current_user_can('edit_page', $post_id)) { return; }
+    if (!isset($_POST['karsabt_service_faq'])) { delete_post_meta($post_id, '_karsabt_service_faq'); return; }
     $raw = sanitize_textarea_field(wp_unslash($_POST['karsabt_service_faq']));
     $items = array();
     foreach (preg_split('/\r\n|\r|\n/', $raw) as $line) {
         $parts = explode('|', $line, 2);
-        if (count($parts) !== 2) {
-            continue;
-        }
+        if (count($parts) !== 2) { continue; }
         $question = sanitize_text_field(trim($parts[0]));
         $answer = sanitize_textarea_field(trim($parts[1]));
-        if ($question !== '' && $answer !== '') {
-            $items[] = array('question' => $question, 'answer' => $answer);
-        }
+        if ($question !== '' && $answer !== '') { $items[] = array('question' => $question, 'answer' => $answer); }
     }
-
-    if ($items) {
-        update_post_meta($post_id, '_karsabt_service_faq', $items);
-    } else {
-        delete_post_meta($post_id, '_karsabt_service_faq');
-    }
+    if ($items) { update_post_meta($post_id, '_karsabt_service_faq', $items); }
+    else { delete_post_meta($post_id, '_karsabt_service_faq'); }
 }
+
 add_action('save_post_page', 'karsabt_save_service_faq');
 
-/** نمایش FAQPage JSON-LD فقط زمانی که پرسش و پاسخ واقعی ثبت شده باشد. */
 function karsabt_output_service_faq_schema() {
-    if (!is_singular('page')) {
-        return;
-    }
+    if (!is_singular('page') || karsabt_has_seo_plugin()) { return; }
     $items = get_post_meta(get_queried_object_id(), '_karsabt_service_faq', true);
-    if (!is_array($items) || !$items) {
-        return;
-    }
+    if (!is_array($items) || !$items) { return; }
     $entities = array();
     foreach ($items as $item) {
-        if (empty($item['question']) || empty($item['answer'])) {
-            continue;
-        }
-        $entities[] = array(
-            '@type' => 'Question',
-            'name' => wp_strip_all_tags($item['question']),
-            'acceptedAnswer' => array(
-                '@type' => 'Answer',
-                'text' => wp_strip_all_tags($item['answer']),
-            ),
-        );
+        if (empty($item['question']) || empty($item['answer'])) { continue; }
+        $entities[] = array('@type' => 'Question', 'name' => wp_strip_all_tags($item['question']), 'acceptedAnswer' => array('@type' => 'Answer', 'text' => wp_strip_all_tags($item['answer'])));
     }
-    if (!$entities) {
-        return;
-    }
-    $schema = array(
-        '@context' => 'https://schema.org',
-        '@type' => 'FAQPage',
-        'mainEntity' => $entities,
-    );
+    if (!$entities) { return; }
+    $schema = array('@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $entities);
     echo "\n<script type=\"application/ld+json\">" . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>\n";
 }
-add_action('wp_head', 'karsabt_output_service_faq_schema');
+add_action('wp_head', 'karsabt_output_service_faq_schema', 21);
