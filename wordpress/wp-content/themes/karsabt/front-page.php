@@ -1,5 +1,5 @@
 <?php get_header(); ?>
-<main>
+<main id="main-content">
 <section class="hero"><div class="container hero-grid">
 <div class="hero-art" role="img" aria-label="تصویر مفهومی خدمات آنلاین کارثبت">🏛️</div>
 <div class="hero-copy"><div class="eyebrow">خدمات ثبتی و اداری، ساده‌تر از همیشه</div><h1>کارثبت</h1><h2>سامانه جامع خدمات ثبتی و اداری</h2>
