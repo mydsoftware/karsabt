@@ -216,11 +216,11 @@ add_shortcode('karsabt_breadcrumbs', 'karsabt_breadcrumbs_shortcode');
 
 /** نمایش خودکار مسیر راهنما در برگه‌های معمولی؛ صفحات Elementor کنترل دستی دارند. */
 function karsabt_prepend_page_breadcrumbs($content) {
-    if (is_admin() || !is_singular('page') || !in_the_loop() || !is_main_query()) {
+    if (is_admin() || !is_singular(array('page', 'post')) || !in_the_loop() || !is_main_query()) {
         return $content;
     }
     $post_id = get_queried_object_id();
-    if (get_post_meta($post_id, '_elementor_edit_mode', true) === 'builder') {
+    if (is_page() && get_post_meta($post_id, '_elementor_edit_mode', true) === 'builder') {
         return $content;
     }
     if (strpos($content, '[karsabt_breadcrumbs]') !== false || strpos($content, 'karsabt-breadcrumbs') !== false) {
