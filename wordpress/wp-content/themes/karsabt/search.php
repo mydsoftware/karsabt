@@ -4,7 +4,7 @@
  */
 get_header();
 ?>
-<main class="page-content">
+<main id="main-content" class="page-content">
   <div class="container">
     <header class="archive-header">
       <div class="eyebrow">جست‌وجو در کارثبت</div>
