@@ -57,3 +57,36 @@ button, input, select, textarea { font: inherit; }
   :root { --muted: #40516a; --line: #9aabc1; }
   .btn { box-shadow: none; }
 }
+
+
+/* دسترس‌پذیری پایه: تمرکز صفحه‌کلید و کاهش حرکت */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid #b45309;
+    outline-offset: 3px;
+}
+
+.skip-link:focus {
+    z-index: 100000;
+    clip: auto;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: .85rem 1.1rem;
+    overflow: visible;
+    white-space: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+@media (forced-colors: active) {
+    :where(a, button, input, select, textarea, summary):focus-visible {
+        outline: 2px solid Highlight;
+    }
+}
