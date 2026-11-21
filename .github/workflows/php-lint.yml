@@ -32,6 +32,15 @@ jobs:
             php -l "$file"
           done
 
+      - name: بررسی نحو فایل‌های آزمون
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' tests < <(find tests/php -type f -name '*.php' -print0)
+          for file in "${tests[@]}"; do
+            php -l "$file"
+          done
+
       - name: اجرای آزمون‌های مستقل OTP
         run: php tests/php/otp-service-test.php
 
