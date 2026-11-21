@@ -8,6 +8,9 @@
  * @package Karsabt
  */
 if (!defined('ABSPATH')) { exit; }
+$karsabt_service_title = get_the_title(get_queried_object_id());
+$karsabt_service_keys = array('ثبت شرکت' => 'company', 'ثبت برند' => 'trademark', 'کارت بازرگانی' => 'other', 'مجوز مشاغل خانگی' => 'home_business', 'پروانه کسب' => 'business');
+$karsabt_service_key = isset($karsabt_service_keys[$karsabt_service_title]) ? $karsabt_service_keys[$karsabt_service_title] : 'other';
 get_header();
 $is_elementor = get_post_meta(get_queried_object_id(), '_elementor_edit_mode', true) === 'builder';
 ?>
@@ -40,7 +43,7 @@ $is_elementor = get_post_meta(get_queried_object_id(), '_elementor_edit_mode', t
                 <aside class="ks-service-detail__aside">
                     <h2>برای شروع چه کار کنم؟</h2>
                     <p>درخواست خود را ثبت کنید تا شرایط و مدارک موردنیاز بررسی و مراحل بعدی به شما اعلام شود.</p>
-                    <a class="ks-button" href="<?php echo esc_url(add_query_arg('service', get_the_title(), home_url('/#contact'))); ?>">شروع ثبت درخواست</a>
+                    <a class="ks-button" href="<?php echo esc_url(add_query_arg('service', $karsabt_service_key, home_url('/#contact'))); ?>">شروع ثبت درخواست</a>
                 </aside>
             </div>
         </section>
