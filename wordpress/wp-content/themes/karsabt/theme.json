@@ -17,7 +17,10 @@
         { "slug": "text", "name": "متن", "color": "#172846" },
         { "slug": "muted", "name": "متن کم‌رنگ", "color": "#64748b" },
         { "slug": "surface", "name": "پس‌زمینه", "color": "#eef5ff" },
-        { "slug": "white", "name": "سفید", "color": "#ffffff" }
+        { "slug": "white", "name": "سفید", "color": "#ffffff" },
+        { "slug": "surface-soft", "name": "پس‌زمینه روشن", "color": "#f6f9ff" },
+        { "slug": "border", "name": "خطوط و حاشیه", "color": "#dce7f7" },
+        { "slug": "success", "name": "سبز موفقیت", "color": "#16834a" }
       ]
     },
     "typography": {
@@ -37,6 +40,7 @@
       ]
     },
     "spacing": {
+      "defaultSpacingSizes": false,
       "units": ["px", "rem", "%", "vw"],
       "spacingSizes": [
         { "slug": "20", "size": "0.5rem", "name": "خیلی کم" },
