@@ -18,6 +18,8 @@ function karsabt_setup() {
     ));
     add_theme_support('responsive-embeds');
     add_theme_support('align-wide');
+    // پشتیبانی پایه از Elementor و امکان استفاده از قالب‌ساز آن.
+    add_theme_support('elementor');
     register_nav_menus(array(
         'primary' => 'منوی اصلی',
         'footer' => 'منوی پایین صفحه',
@@ -47,3 +49,11 @@ function karsabt_excerpt_more($more) {
     return '…';
 }
 add_filter('excerpt_more', 'karsabt_excerpt_more');
+
+/** ثبت جایگاه‌های استاندارد برای قالب‌ساز Elementor. */
+function karsabt_register_elementor_locations($elementor_theme_manager) {
+    if (is_object($elementor_theme_manager) && method_exists($elementor_theme_manager, 'register_all_core_location')) {
+        $elementor_theme_manager->register_all_core_location();
+    }
+}
+add_action('elementor/theme/register_locations', 'karsabt_register_elementor_locations');
