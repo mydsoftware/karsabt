@@ -11,8 +11,19 @@
 <div class="check-grid"><span>ثبت شرکت و تغییرات</span><span>مجوز مشاغل خانگی</span><span>ثبت برند و علامت تجاری</span><span>کافی‌نت آنلاین</span><span>جواز کسب و پروانه صنفی</span><span>خدمات اداری و اینترنتی</span></div>
 <a class="btn" href="#contact">همین حالا سفارش دهید ←</a></div></div></section>
 <section class="section" id="services"><div class="container"><div class="section-head"><h2>خدمات ما</h2><p>خدمات موردنیاز کسب‌وکار خود را آنلاین ثبت و پیگیری کنید.</p></div><div class="services-grid">
-<?php $services=array(array('🏢','ثبت شرکت و تغییرات','ثبت شرکت، تغییر اعضا و تغییرات قانونی'),array('🏅','ثبت برند و علامت تجاری','ثبت و پیگیری علامت تجاری'),array('🏬','جواز کسب و پروانه صنفی','راهنمایی و پیگیری مجوزهای صنفی'),array('🏠','مجوز مشاغل خانگی','دریافت مجوز فعالیت‌های خانگی'),array('🖥️','کافی‌نت آنلاین','انجام خدمات اینترنتی و سامانه‌ای'),array('📄','خدمات اداری و اینترنتی','انجام امور اداری و ثبت درخواست‌ها')); foreach($services as $s): ?>
-<a class="service-card" href="#contact"><div class="service-icon"><?php echo esc_html($s[0]); ?></div><h3><?php echo esc_html($s[1]); ?></h3><p><?php echo esc_html($s[2]); ?></p></a><?php endforeach; ?>
+<?php
+$services = array(
+    array('🏢', 'ثبت شرکت و تغییرات', 'ثبت شرکت، تغییر اعضا و تغییرات قانونی'),
+    array('🏅', 'ثبت برند و علامت تجاری', 'ثبت و پیگیری علامت تجاری'),
+    array('🏬', 'جواز کسب و پروانه صنفی', 'راهنمایی و پیگیری مجوزهای صنفی'),
+    array('🏠', 'مجوز مشاغل خانگی', 'دریافت مجوز فعالیت‌های خانگی'),
+    array('🖥️', 'کافی‌نت آنلاین', 'انجام خدمات اینترنتی و سامانه‌ای'),
+    array('📄', 'خدمات اداری و اینترنتی', 'انجام امور اداری و ثبت درخواست‌ها'),
+);
+foreach ($services as $service) :
+    get_template_part('template-parts/service-card', null, array('service' => $service));
+endforeach;
+?>
 </div></div></section>
 <section class="benefits"><div class="container benefit-grid"><div class="benefit"><b>🛡️</b>امنیت اطلاعات و محرمانگی</div><div class="benefit"><b>⚡</b>پردازش سریع و بدون اتلاف وقت</div><div class="benefit"><b>🤝</b>پشتیبانی حرفه‌ای</div><div class="benefit"><b>✓</b>مشاوره پیش از سفارش</div></div></section>
 <section class="section blog-section"><div class="container"><div class="section-head"><h2>آخرین مقالات و آموزش‌ها</h2><p>دانش کاربردی برای شروع و توسعه کسب‌وکار</p></div><div class="posts-grid">
