@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://karsabt.ir/sitemap.xml
