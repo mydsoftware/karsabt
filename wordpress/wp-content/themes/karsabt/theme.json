@@ -1,0 +1,83 @@
+{
+  "$schema": "https://schemas.wp.org/wp/6.6/theme.json",
+  "version": 2,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {
+      "contentSize": "760px",
+      "wideSize": "1180px"
+    },
+    "color": {
+      "defaultPalette": false,
+      "defaultGradients": false,
+      "palette": [
+        { "slug": "primary", "name": "آبی کارثبت", "color": "#0876d8" },
+        { "slug": "primary-dark", "name": "آبی تیره", "color": "#0755a9" },
+        { "slug": "navy", "name": "سرمه‌ای", "color": "#10264c" },
+        { "slug": "text", "name": "متن", "color": "#172846" },
+        { "slug": "muted", "name": "متن کم‌رنگ", "color": "#64748b" },
+        { "slug": "surface", "name": "پس‌زمینه", "color": "#eef5ff" },
+        { "slug": "white", "name": "سفید", "color": "#ffffff" }
+      ]
+    },
+    "typography": {
+      "fluid": true,
+      "fontFamilies": [
+        {
+          "fontFamily": "Tahoma, Arial, sans-serif",
+          "name": "فونت پیش‌فرض کارثبت",
+          "slug": "karsabt-default"
+        }
+      ],
+      "fontSizes": [
+        { "slug": "small", "size": "0.875rem", "name": "کوچک" },
+        { "slug": "medium", "size": "1rem", "name": "معمولی" },
+        { "slug": "large", "size": "1.5rem", "name": "بزرگ" },
+        { "slug": "x-large", "size": "clamp(2rem, 5vw, 3.5rem)", "name": "خیلی بزرگ" }
+      ]
+    },
+    "spacing": {
+      "units": ["px", "rem", "%", "vw"],
+      "spacingSizes": [
+        { "slug": "20", "size": "0.5rem", "name": "خیلی کم" },
+        { "slug": "30", "size": "1rem", "name": "کم" },
+        { "slug": "40", "size": "1.5rem", "name": "متوسط" },
+        { "slug": "50", "size": "2rem", "name": "زیاد" },
+        { "slug": "60", "size": "3rem", "name": "خیلی زیاد" }
+      ]
+    },
+    "blocks": {
+      "core/button": {
+        "border": { "radius": true },
+        "typography": { "fontWeight": true }
+      },
+      "core/image": {
+        "border": { "radius": true }
+      }
+    }
+  },
+  "styles": {
+    "color": {
+      "background": "#ffffff",
+      "text": "#172846"
+    },
+    "typography": {
+      "fontFamily": "Tahoma, Arial, sans-serif",
+      "lineHeight": "1.9"
+    },
+    "elements": {
+      "link": {
+        "color": { "text": "#0876d8" },
+        ":hover": { "color": { "text": "#0755a9" } }
+      },
+      "button": {
+        "border": { "radius": "999px" },
+        "color": {
+          "background": "#0876d8",
+          "text": "#ffffff"
+        },
+        "typography": { "fontWeight": "700" }
+      }
+    }
+  }
+}
