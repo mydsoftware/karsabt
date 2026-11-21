@@ -37,3 +37,7 @@
 
 ## زبان
 تمام رابط‌ها و مستندات پروژه باید فارسی و راست‌چین باشند.
+
+
+راهنمای معماری: [docs/PROJECT-ARCHITECTURE-FA.md](docs/PROJECT-ARCHITECTURE-FA.md)
+وضعیت آمادگی انتشار ۱.۰.۰: [docs/RELEASE-READINESS-1.0.0-FA.md](docs/RELEASE-READINESS-1.0.0-FA.md)
