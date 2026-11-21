@@ -1,0 +1,19 @@
+/* استایل هماهنگ ویرایشگر بلوکی وردپرس با قالب کارثبت */
+body {
+  direction: rtl;
+  color: #172846;
+  font-family: Tahoma, Arial, sans-serif;
+  line-height: 1.9;
+}
+.editor-styles-wrapper {
+  direction: rtl;
+  text-align: right;
+  font-family: Tahoma, Arial, sans-serif;
+}
+.editor-styles-wrapper a { color: #0876d8; }
+.editor-styles-wrapper .wp-block-button__link {
+  border-radius: 999px;
+  background: #0876d8;
+  color: #fff;
+}
+.editor-styles-wrapper .wp-block-image img { height: auto; }
