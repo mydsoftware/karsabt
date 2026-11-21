@@ -1,4 +1,15 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // پیش‌انتخاب خدمت از لینک‌های صفحات خدمات، بدون وابستگی به منوی سایت.
+    const serviceParam = new URLSearchParams(window.location.search).get('service');
+    const serviceSelect = document.querySelector('#karsabt-service, select[name="service"]');
+    if (serviceParam && serviceSelect) {
+        const optionExists = Array.from(serviceSelect.options).some(function (option) { return option.value === serviceParam; });
+        if (optionExists) {
+            serviceSelect.value = serviceParam;
+            serviceSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+
     const button = document.querySelector('.menu-toggle');
     const navigation = document.querySelector('.main-nav');
     if (!button || !navigation) return;
