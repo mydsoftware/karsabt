@@ -35,6 +35,17 @@ function karsabt_assets() {
     }
 }
 add_action('wp_enqueue_scripts', 'karsabt_assets');
+/** رنگ‌های برند قابل تنظیم؛ مقادیر فقط پس از اعتبارسنجی رنگ وارد CSS می‌شوند. */
+function karsabt_custom_brand_styles() {
+    $primary = sanitize_hex_color(get_theme_mod('karsabt_brand_color', '#0876d8'));
+    $navy = sanitize_hex_color(get_theme_mod('karsabt_navy_color', '#10264c'));
+    $css = '';
+    if ($primary) { $css .= ':root{--blue:' . $primary . ';}'; }
+    if ($navy) { $css .= ':root{--navy:' . $navy . ';}'; }
+    if ($css) { wp_add_inline_style('karsabt-design-system', $css); }
+}
+add_action('wp_enqueue_scripts', 'karsabt_custom_brand_styles', 20);
+
 
 function karsabt_excerpt_length($length) { return 24; }
 add_filter('excerpt_length', 'karsabt_excerpt_length');
@@ -86,6 +97,19 @@ function karsabt_customize_register($wp_customize) {
         'label' => 'پیوند دکمه ثبت سفارش',
         'type' => 'url',
     ));
+    // تنظیمات تکمیلی سربرگ، پابرگ و رنگ‌های برند.
+    $wp_customize->add_setting('karsabt_show_topbar', array('default' => true, 'sanitize_callback' => 'wp_validate_boolean'));
+    $wp_customize->add_control('karsabt_show_topbar', array('section' => 'karsabt_contact', 'label' => 'نمایش نوار اطلاعات تماس', 'type' => 'checkbox'));
+    $wp_customize->add_setting('karsabt_show_header_cta', array('default' => true, 'sanitize_callback' => 'wp_validate_boolean'));
+    $wp_customize->add_control('karsabt_show_header_cta', array('section' => 'karsabt_contact', 'label' => 'نمایش دکمه سفارش در سربرگ', 'type' => 'checkbox'));
+    $wp_customize->add_setting('karsabt_show_mobile_cta', array('default' => true, 'sanitize_callback' => 'wp_validate_boolean'));
+    $wp_customize->add_control('karsabt_show_mobile_cta', array('section' => 'karsabt_contact', 'label' => 'نمایش دکمه ثابت سفارش در موبایل', 'type' => 'checkbox'));
+    $wp_customize->add_setting('karsabt_footer_copyright', array('default' => 'تمامی حقوق محفوظ است.', 'sanitize_callback' => 'sanitize_text_field'));
+    $wp_customize->add_control('karsabt_footer_copyright', array('section' => 'karsabt_contact', 'label' => 'متن حقوق پابرگ', 'type' => 'text'));
+    $wp_customize->add_setting('karsabt_brand_color', array('default' => '#0876d8', 'sanitize_callback' => 'sanitize_hex_color'));
+    $wp_customize->add_control(new WP_Customize_Color_Control($wp_customize, 'karsabt_brand_color', array('section' => 'karsabt_contact', 'label' => 'رنگ اصلی برند')));
+    $wp_customize->add_setting('karsabt_navy_color', array('default' => '#10264c', 'sanitize_callback' => 'sanitize_hex_color'));
+    $wp_customize->add_control(new WP_Customize_Color_Control($wp_customize, 'karsabt_navy_color', array('section' => 'karsabt_contact', 'label' => 'رنگ تیره سربرگ و پابرگ')));
     $fields = array(
         'karsabt_contact_phone' => array('تلفن تماس', 'text', ''),
         'karsabt_contact_email' => array('ایمیل تماس', 'email', ''),
