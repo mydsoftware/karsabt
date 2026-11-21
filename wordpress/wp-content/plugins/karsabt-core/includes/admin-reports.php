@@ -80,12 +80,16 @@ function karsabt_admin_reports_collect($month) {
         $history = get_post_meta($id, '_karsabt_status_history', true);
         $history = is_array($history) ? $history : array();
         $counted_staff = array();
+        $order_completed_this_month = false;
         foreach ($history as $event) {
             if ('completed' !== ($event['status'] ?? '') || empty($event['time'])) { continue; }
             $actor = absint($event['user_id'] ?? 0);
             $event_time = (string) $event['time'];
             if ($event_time < $start_sql || $event_time >= $end_sql) { continue; }
-            $summary['completed_month']++;
+            if (!$order_completed_this_month) {
+                $summary['completed_month']++;
+                $order_completed_this_month = true;
+            }
             if (!$actor) { continue; }
             if (!isset($summary['staff'][$actor])) {
                 $user = get_user_by('id', $actor);
