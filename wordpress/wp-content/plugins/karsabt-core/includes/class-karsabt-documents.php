@@ -278,13 +278,30 @@ function karsabt_docs_admin_page() {
         $document_id = sanitize_text_field(wp_unslash($_POST['document_id'] ?? ''));
         $status = sanitize_key(wp_unslash($_POST['status'] ?? ''));
         $note = sanitize_textarea_field(wp_unslash($_POST['admin_note'] ?? ''));
-        list($doc, $docs) = karsabt_docs_find($order_id, $document_id);
-        if ($doc && isset(karsabt_docs_review_states()[$status])) {
-            $doc['status'] = $status; $doc['admin_note'] = $note;
-            foreach ($docs as $i=>$item) { if (($item['id'] ?? '') === $document_id) { $docs[$i] = $doc; break; } }
-            update_post_meta($order_id, '_karsabt_documents', $docs);
-            $notice = '<div class="notice notice-success"><p>وضعیت بررسی ذخیره شد.</p></div>';
-        } else { $notice = '<div class="notice notice-error"><p>مدرک یا وضعیت معتبر نیست.</p></div>'; }
+        $order = $order_id ? get_post($order_id) : null;
+        if (!$order || 'karsabt_order' !== $order->post_type || 'private' !== $order->post_status ||
+            !preg_match('/^[a-f0-9]{32}$/', $document_id)) {
+            $notice = '<div class="notice notice-error"><p>درخواست یا شناسه مدرک معتبر نیست.</p></div>';
+        } else {
+            list($doc, $docs) = karsabt_docs_find($order_id, $document_id);
+            if ($doc && isset(karsabt_docs_review_states()[$status])) {
+                $doc['status'] = $status;
+                $doc['admin_note'] = $note;
+                foreach ($docs as $i => $item) {
+                    if (isset($item['id']) && is_string($item['id']) && hash_equals($item['id'], $document_id)) {
+                        $docs[$i] = $doc;
+                        break;
+                    }
+                }
+                if (update_post_meta($order_id, '_karsabt_documents', $docs)) {
+                    $notice = '<div class="notice notice-success"><p>وضعیت بررسی ذخیره شد.</p></div>';
+                } else {
+                    $notice = '<div class="notice notice-error"><p>ذخیره تغییرات انجام نشد.</p></div>';
+                }
+            } else {
+                $notice = '<div class="notice notice-error"><p>مدرک یا وضعیت معتبر نیست.</p></div>';
+            }
+        }
     }
     $orders = get_posts(array('post_type'=>'karsabt_order','post_status'=>'private','posts_per_page'=>200,'meta_key'=>'_karsabt_documents','orderby'=>'date','order'=>'DESC'));
     echo '<div class="wrap"><h1>مدیریت مدارک مشتریان</h1>'.$notice;
