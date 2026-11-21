@@ -17,3 +17,29 @@ body {
   color: #fff;
 }
 .editor-styles-wrapper .wp-block-image img { height: auto; }
+
+/* هماهنگی سامانه طراحی کارثبت در ویرایشگر */
+:root {
+  --ks-color-primary: #0876d8;
+  --ks-color-navy: #10264c;
+  --ks-color-text: #172846;
+  --ks-color-muted: #64748b;
+  --ks-color-surface: #eef5ff;
+  --ks-color-border: #dce7f7;
+}
+.editor-styles-wrapper h1,
+.editor-styles-wrapper h2,
+.editor-styles-wrapper h3 { color: var(--ks-color-navy); line-height: 1.5; }
+.editor-styles-wrapper .wp-block-button__link {
+  min-height: 44px;
+  padding: .7rem 1.35rem;
+  font-family: Tahoma, Arial, sans-serif;
+  font-weight: 800;
+}
+.editor-styles-wrapper .wp-block-quote {
+  border-right: 4px solid var(--ks-color-primary);
+  padding: 1rem 1.25rem;
+  background: var(--ks-color-surface);
+}
+.editor-styles-wrapper .wp-block-table td,
+.editor-styles-wrapper .wp-block-table th { border-color: var(--ks-color-border); }
