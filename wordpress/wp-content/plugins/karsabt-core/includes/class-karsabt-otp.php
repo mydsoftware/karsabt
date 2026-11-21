@@ -85,6 +85,7 @@ final class Karsabt_OTP_Service {
             $payload['attempts'] = isset($payload['attempts']) ? (int) $payload['attempts'] + 1 : 1;
             if ($payload['attempts'] >= self::MAX_VERIFY_ATTEMPTS) {
                 delete_transient($transient_key);
+                return new WP_Error('otp_attempts_exceeded', 'تعداد تلاش‌های مجاز به پایان رسیده است.');
             } else {
                 $remaining_ttl = max(1, (int) $payload['expires_at'] - time());
                 set_transient($transient_key, $payload, $remaining_ttl);
