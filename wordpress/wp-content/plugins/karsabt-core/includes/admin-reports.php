@@ -213,7 +213,7 @@ function karsabt_admin_reports_export_csv() {
     fputcsv($out, array('خلاصه',$month,'کل پرونده‌ها',$data['total']));
     fputcsv($out, array('خلاصه',$month,'ثبت‌شده در ماه',$data['created_month']));
     fputcsv($out, array('خلاصه',$month,'تکمیل‌شده در ماه',$data['completed_month']));
-    fputcsv($out, array('خلاصه',$month,'پرونده‌های معوق بیش از ۷ روز',$data['overdue']));
+    fputcsv($out, array('خلاصه',$month,'پرونده‌های معوق (مهلت گذشته / بیش از ۷ روز)',$data['overdue']));
     foreach ($data['by_status'] as $key => $count) {
         $labels = karsabt_core_statuses();
         fputcsv($out, array('وضعیت',$month,$labels[$key] ?? $key,$count));
