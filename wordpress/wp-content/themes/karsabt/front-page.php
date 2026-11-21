@@ -1,5 +1,9 @@
 <?php get_header(); ?>
-<main id="main-content">
+<?php if (have_posts()) : the_post(); endif; ?>
+<main id="main-content" class="karsabt-homepage">
+<?php if (get_post_meta(get_the_ID(), '_elementor_edit_mode', true) === 'builder') : ?>
+    <div class="elementor-page-content"><?php the_content(); ?></div>
+<?php else : ?>
 <section class="hero"><div class="container hero-grid">
 <div class="hero-art" role="img" aria-label="تصویر مفهومی خدمات آنلاین کارثبت">🏛️</div>
 <div class="hero-copy"><div class="eyebrow">خدمات ثبتی و اداری، ساده‌تر از همیشه</div><h1>کارثبت</h1><h2>سامانه جامع خدمات ثبتی و اداری</h2>
@@ -17,4 +21,5 @@
 <?php endwhile;wp_reset_postdata();else: foreach(array('راهنمای ثبت شرکت','راهنمای ثبت برند','مجوزهای کسب‌وکار') as $title):?><article class="post-card"><div class="post-content"><h3><?php echo esc_html($title); ?></h3><p>مقالات آموزشی پس از انتشار نوشته‌ها در پیشخوان وردپرس نمایش داده می‌شوند.</p></div></article><?php endforeach;endif; ?>
 </div></div></section>
 <section class="contact-band" id="contact"><div class="container"><div class="contact-box"><div><h2>درخواست خدمات کارثبت</h2><p>فرم زیر را تکمیل کنید تا درخواست شما در سامانه ثبت و بررسی شود.</p></div></div><?php if (shortcode_exists("karsabt_order_form")) { echo do_shortcode("[karsabt_order_form]"); } else { ?><div class="form-unavailable" role="status"><strong>فرم ثبت سفارش موقتاً در دسترس نیست.</strong><p>برای فعال‌سازی ثبت سفارش آنلاین، افزونه خدمات کارثبت باید نصب و فعال باشد.</p></div><?php } ?></div></section>
+<?php endif; ?>
 </main><?php get_footer(); ?>
