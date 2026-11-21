@@ -29,6 +29,10 @@ function karsabt_assets() {
     $design_system_version = file_exists($design_system_path) ? (string) filemtime($design_system_path) : $theme_version;
     wp_enqueue_style('karsabt-design-system', get_template_directory_uri() . '/assets/css/design-system.css', array('karsabt-style'), $design_system_version);
     wp_enqueue_script('karsabt-main', get_template_directory_uri() . '/assets/js/theme.js', array(), $script_version, true);
+    // وردپرس ۶.۳ به بعد اجرای defer را با ترتیب وابستگی‌ها مدیریت می‌کند.
+    if (function_exists('wp_script_add_data')) {
+        wp_script_add_data('karsabt-main', 'strategy', 'defer');
+    }
 }
 add_action('wp_enqueue_scripts', 'karsabt_assets');
 
