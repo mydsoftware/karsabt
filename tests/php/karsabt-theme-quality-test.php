@@ -86,6 +86,9 @@ $about = (string) file_get_contents($theme . '/page-templates/about.php');
 $contact = (string) file_get_contents($theme . '/page-templates/contact.php');
 $pricing = (string) file_get_contents($theme . '/page-templates/pricing.php');
 $package_workflow = (string) file_get_contents($root . '/.github/workflows/package-theme.yml');
+$services_template = (string) file_get_contents($theme . '/page-templates/services.php');
+$detail_template = (string) file_get_contents($theme . '/page-templates/service-detail.php');
+$theme_js = (string) file_get_contents($theme . '/assets/js/theme.js');
 
 karsabt_test('عنوان صفحه فرود با محتوای وردپرس نمایش داده می‌شود', strpos($landing, 'the_title()') !== false);
 karsabt_test('محتوای صفحه فرود در قالب entry-content', strpos($landing, 'the_content()') !== false && strpos($landing, 'entry-content') !== false);
@@ -94,6 +97,10 @@ karsabt_test('صفحه درباره شامل محتوای ویرایش‌پذی�
 karsabt_test('لینک تلفن در صفحه تماس امن‌سازی شده', strpos($contact, 'esc_url(\'tel:\' . preg_replace') !== false && strpos($contact, 'esc_html($phone)') !== false);
 karsabt_test('صفحه تعرفه استعلام خدمت را در لینک منتقل می‌کند', strpos($pricing, 'add_query_arg') !== false && strpos($pricing, "'service'") !== false);
 karsabt_test('بسته‌سازی قالب بدون پوشه گیت و تست', strpos($package_workflow, 'karsabt/.git/*') !== false && strpos($package_workflow, 'karsabt/tests/*') !== false);
+
+karsabt_test('لینک خدمات از کلیدهای معتبر فرم سفارش استفاده می‌کند', strpos($services_template, "'company'") !== false && strpos($services_template, "'trademark'") !== false && strpos($services_template, "'home_business'") !== false && strpos($services_template, "'business'") !== false);
+karsabt_test('پیش‌انتخاب خدمت از پارامتر URL', strpos($theme_js, 'URLSearchParams(window.location.search)') !== false && strpos($theme_js, 'serviceSelect.value = serviceParam') !== false);
+karsabt_test('صفحه جزئیات خدمت از کلید فرم استفاده می‌کند', strpos($detail_template, "add_query_arg('service', $karsabt_service_key") !== false);
 
 $failed = array();
 foreach ($checks as $check) {
