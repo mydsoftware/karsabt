@@ -47,6 +47,7 @@ final class Karsabt_OTP_Service {
         $payload = array(
             'hash' => hash_hmac('sha256', self::mobile_key($mobile) . ':' . $code, wp_salt('secure_auth')),
             'attempts' => 0,
+            'expires_at' => time() + self::CODE_TTL,
         );
         set_transient(self::transient_key('code', $mobile), $payload, self::CODE_TTL);
         set_transient($cooldown_key, 1, self::RESEND_DELAY);
@@ -70,8 +71,13 @@ final class Karsabt_OTP_Service {
 
         $transient_key = self::transient_key('code', $mobile);
         $payload = get_transient($transient_key);
-        if (!is_array($payload) || empty($payload['hash'])) {
+        if (!is_array($payload) || empty($payload['hash']) || empty($payload['expires_at']) || (int) $payload['expires_at'] <= time()) {
+            delete_transient($transient_key);
             return new WP_Error('otp_expired', 'کد تأیید معتبر نیست یا منقضی شده است.');
+        }
+        if ((int) ($payload['attempts'] ?? 0) >= self::MAX_VERIFY_ATTEMPTS) {
+            delete_transient($transient_key);
+            return new WP_Error('otp_attempts_exceeded', 'تعداد تلاش‌های مجاز به پایان رسیده است.');
         }
 
         $expected = hash_hmac('sha256', self::mobile_key($mobile) . ':' . $code, wp_salt('secure_auth'));
@@ -80,7 +86,8 @@ final class Karsabt_OTP_Service {
             if ($payload['attempts'] >= self::MAX_VERIFY_ATTEMPTS) {
                 delete_transient($transient_key);
             } else {
-                set_transient($transient_key, $payload, self::CODE_TTL);
+                $remaining_ttl = max(1, (int) $payload['expires_at'] - time());
+                set_transient($transient_key, $payload, $remaining_ttl);
             }
             return new WP_Error('invalid_otp', 'کد تأیید اشتباه است.');
         }
