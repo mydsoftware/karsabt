@@ -86,6 +86,39 @@ $expired['expires_at'] = $GLOBALS['karsabt_test_time'] - 1;
 set_transient($code_key, $expired, 300);
 karsabt_assert('otp_expired' === karsabt_error_code(Karsabt_OTP_Service::verify($mobile, $code)), 'رد کد منقضی‌شده');
 
+
+$GLOBALS['karsabt_test_transients'] = array();
+$GLOBALS['karsabt_test_time'] = time();
+karsabt_assert('invalid_mobile' === karsabt_error_code(Karsabt_OTP_Service::send('12345')), 'رد شماره موبایل نامعتبر');
+
+$GLOBALS['karsabt_test_transients'] = array();
+$GLOBALS['karsabt_test_time'] = time();
+for ($i = 1; $i <= 5; $i++) {
+    karsabt_assert(true === Karsabt_OTP_Service::send($mobile), 'ارسال مجاز شماره ' . $i . ' در سقف ساعتی');
+    $GLOBALS['karsabt_test_time'] += 61;
+}
+karsabt_assert('otp_rate_limited' === karsabt_error_code(Karsabt_OTP_Service::send($mobile)), 'رد ارسال ششم در بازه یک‌ساعته');
+
+$GLOBALS['karsabt_test_transients'] = array();
+$GLOBALS['karsabt_test_time'] = time();
+karsabt_assert(true === Karsabt_OTP_Service::send($mobile), 'ارسال برای آزمون عدم تمدید عمر کد');
+$code_key = '';
+foreach (array_keys($GLOBALS['karsabt_test_transients']) as $key) {
+    if (strpos($key, 'karsabt_otp_code_') === 0) { $code_key = $key; break; }
+}
+$before = get_transient($code_key);
+$GLOBALS['karsabt_test_time'] += 120;
+karsabt_assert('invalid_otp' === karsabt_error_code(Karsabt_OTP_Service::verify($mobile, '000000')), 'رد کد اشتباه بدون حذف فوری');
+$after = get_transient($code_key);
+karsabt_assert($before['expires_at'] === $after['expires_at'], 'عدم تمدید زمان انقضای کد پس از تلاش اشتباه');
+karsabt_assert(true === Karsabt_OTP_Service::verify($mobile, $GLOBALS['karsabt_test_otp_code']), 'کد صحیح پس از یک تلاش اشتباه همچنان قابل تأیید است');
+
+$GLOBALS['karsabt_test_transients'] = array();
+$GLOBALS['karsabt_test_time'] = time();
+karsabt_assert(true === Karsabt_OTP_Service::send($mobile), 'ارسال برای آزمون ارقام فارسی');
+$persian_code = strtr($GLOBALS['karsabt_test_otp_code'], array('0'=>'۰','1'=>'۱','2'=>'۲','3'=>'۳','4'=>'۴','5'=>'۵','6'=>'۶','7'=>'۷','8'=>'۸','9'=>'۹'));
+karsabt_assert(true === Karsabt_OTP_Service::verify($mobile, $persian_code), 'پذیرش ارقام فارسی در کد تأیید');
+
 $GLOBALS['karsabt_test_transients'] = array();
 $GLOBALS['karsabt_test_provider'] = false;
 karsabt_assert('otp_provider_unavailable' === karsabt_error_code(Karsabt_OTP_Service::send($mobile)), 'عدم فعال‌سازی کد بدون درگاه پیامک');
