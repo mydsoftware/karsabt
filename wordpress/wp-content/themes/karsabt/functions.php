@@ -280,7 +280,7 @@ function karsabt_output_service_schema() {
         'provider' => array('@id' => home_url('/#organization')),
         'areaServed' => array('@type' => 'Country', 'name' => 'ایران'),
     );
-    echo "\\n<script type=\\"application/ld+json\\">" . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>\\n";
+    echo '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>';
 }
 add_action('wp_head', 'karsabt_output_service_schema', 22);
 
