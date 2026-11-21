@@ -145,7 +145,7 @@ function karsabt_docs_customer_portal() {
                 $cat = isset(karsabt_docs_categories()[$doc['category'] ?? '']) ? karsabt_docs_categories()[$doc['category']] : 'سایر مدارک';
                 $state = isset(karsabt_docs_review_states()[$doc['status'] ?? '']) ? karsabt_docs_review_states()[$doc['status']] : 'در انتظار بررسی';
                 $html .= '<li>' . esc_html($doc['name'] ?? 'مدرک') . ' — ' . esc_html($cat) . ' — ' . esc_html($state);
-                if (!empty($doc['admin_note'])) { $html .= '<br>توضیح مدیر: ' . esc_html($doc['admin_note']); }
+                // یادداشت داخلی مدیر نباید در پنل مشتری افشا شود.
                 $html .= ' <a href="' . esc_url(add_query_arg(array('action'=>'karsabt_document_download','order_id'=>$order->ID,'document_id'=>$doc['id'],'_wpnonce'=>wp_create_nonce('karsabt_document_download_'.$order->ID.'_'.$doc['id'])), admin_url('admin-post.php'))) . '">دریافت</a></li>';
             }
             $html .= '</ul>';
