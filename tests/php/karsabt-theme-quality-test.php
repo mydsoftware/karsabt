@@ -59,7 +59,12 @@ karsabt_test('تشخیص صحیح Rank Math', strpos($functions, "class_exists('
 karsabt_test('نادیده‌گرفتن revision هنگام ذخیره FAQ', strpos($functions, 'wp_is_post_revision($post_id)') !== false);
 karsabt_test('نمایش مسیر راهنما در برگه و نوشته', strpos($functions, "is_singular(array('page', 'post'))") !== false);
 karsabt_test('مستندات تنظیمات سفارشی‌ساز', is_file($theme . '/docs/CUSTOMIZER-FA.md') && strpos($readme, 'سفارشی‌سازی') !== false);
-karsabt_test('عدم نمایش اطلاعات تماس خالی در سربرگ', strpos($header, 'if ($contact_location || $contact_email || $contact_phone)') !== false);
+karsabt_test('کنترل نمایش نوار تماس از سفارشی‌ساز', strpos($header, "karsabt_show_topbar") !== false);
+karsabt_test('کنترل نمایش دکمه سربرگ', strpos($header, "karsabt_show_header_cta") !== false);
+karsabt_test('کنترل نمایش دکمه موبایل', strpos($footer, "karsabt_show_mobile_cta") !== false);
+karsabt_test('تنظیم متن حقوق پابرگ', strpos($footer, "karsabt_footer_copyright") !== false);
+karsabt_test('تنظیم رنگ‌های برند با اعتبارسنجی رنگ', strpos($functions, "sanitize_hex_color") !== false && strpos($functions, "wp_add_inline_style") !== false);
+karsabt_test('عدم نمایش اطلاعات تماس خالی در سربرگ', strpos($header, '$contact_location || $contact_email || $contact_phone') !== false);
 
 $failed = array();
 foreach ($checks as $check) {
