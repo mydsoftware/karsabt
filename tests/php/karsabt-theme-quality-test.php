@@ -80,6 +80,21 @@ karsabt_test('قالب درباره ما', is_file($theme . '/page-templates/abo
 karsabt_test('قالب تماس با ما', is_file($theme . '/page-templates/contact.php') && strpos((string) file_get_contents($theme . '/page-templates/contact.php'), 'karsabt_contact_phone') !== false);
 karsabt_test('قالب تعرفه بدون قیمت ساختگی', is_file($theme . '/page-templates/pricing.php') && strpos((string) file_get_contents($theme . '/page-templates/pricing.php'), 'هزینه و شرایط اجرا') !== false);
 
+
+$landing = (string) file_get_contents($theme . '/page-templates/landing-page.php');
+$about = (string) file_get_contents($theme . '/page-templates/about.php');
+$contact = (string) file_get_contents($theme . '/page-templates/contact.php');
+$pricing = (string) file_get_contents($theme . '/page-templates/pricing.php');
+$package_workflow = (string) file_get_contents($root . '/.github/workflows/package-theme.yml');
+
+karsabt_test('عنوان صفحه فرود با محتوای وردپرس نمایش داده می‌شود', strpos($landing, 'the_title()') !== false);
+karsabt_test('محتوای صفحه فرود در قالب entry-content', strpos($landing, 'the_content()') !== false && strpos($landing, 'entry-content') !== false);
+karsabt_test('FAQ صفحه فرود با خروجی امن', strpos($landing, 'esc_html($faq[\'question\'])') !== false && strpos($landing, 'wpautop(esc_html($faq[\'answer\']))') !== false);
+karsabt_test('صفحه درباره شامل محتوای ویرایش‌پذیر است', strpos($about, 'the_content()') !== false);
+karsabt_test('لینک تلفن در صفحه تماس امن‌سازی شده', strpos($contact, 'esc_url(\'tel:\' . preg_replace') !== false && strpos($contact, 'esc_html($phone)') !== false);
+karsabt_test('صفحه تعرفه استعلام خدمت را در لینک منتقل می‌کند', strpos($pricing, "add_query_arg('service', $service") !== false);
+karsabt_test('بسته‌سازی قالب بدون پوشه گیت و تست', strpos($package_workflow, 'karsabt/.git/*') !== false && strpos($package_workflow, 'karsabt/tests/*') !== false);
+
 $failed = array();
 foreach ($checks as $check) {
     echo ($check['ok'] ? '[موفق] ' : '[خطا] ') . $check['label'] . PHP_EOL;
