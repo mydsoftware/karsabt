@@ -28,6 +28,7 @@ $required = array(
     'assets/css/design-system.css',
     'page-templates/services.php',
     'page-templates/service-detail.php',
+    'page-templates/landing-page.php',
 );
 foreach ($required as $file) {
     karsabt_test('وجود فایل ' . $file, is_file($theme . '/' . $file));
@@ -65,6 +66,11 @@ karsabt_test('کنترل نمایش دکمه موبایل', strpos($footer, "kar
 karsabt_test('تنظیم متن حقوق پابرگ', strpos($footer, "karsabt_footer_copyright") !== false);
 karsabt_test('تنظیم رنگ‌های برند با اعتبارسنجی رنگ', strpos($functions, "sanitize_hex_color") !== false && strpos($functions, "wp_add_inline_style") !== false);
 karsabt_test('عدم نمایش اطلاعات تماس خالی در سربرگ', strpos($header, '$contact_location || $contact_email || $contact_phone') !== false);
+
+
+karsabt_test('الگوی صفحه فرود کمپین', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'ks-landing-request') !== false);
+karsabt_test('فرم سفارش در صفحه فرود', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), '[karsabt_order_form]') !== false);
+karsabt_test('راهنمای صفحات فرود', is_file($theme . '/docs/LANDING-PAGES-FA.md'));
 
 $failed = array();
 foreach ($checks as $check) {
