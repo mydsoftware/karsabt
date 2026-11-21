@@ -1,0 +1,42 @@
+name: Theme Quality
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "wordpress/wp-content/themes/karsabt/**"
+      - ".github/workflows/theme-quality.yml"
+  pull_request:
+    paths:
+      - "wordpress/wp-content/themes/karsabt/**"
+      - ".github/workflows/theme-quality.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php-and-json:
+    name: PHP syntax and theme JSON
+    runs-on: ubuntu-latest
+    steps:
+      - name: دریافت کد
+        uses: actions/checkout@v4
+
+      - name: تنظیم PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: none
+
+      - name: بررسی نگارش فایل‌های PHP قالب
+        shell: bash
+        run: |
+          set -euo pipefail
+          theme="wordpress/wp-content/themes/karsabt"
+          while IFS= read -r -d '' file; do
+            php -l "$file"
+          done < <(find "$theme" -type f -name '*.php' -print0)
+
+      - name: بررسی ساختار theme.json
+        run: php -r '$data = json_decode(file_get_contents("wordpress/wp-content/themes/karsabt/theme.json"), true, 512, JSON_THROW_ON_ERROR); if (!is_array($data) || !isset($data["version"])) { fwrite(STDERR, "theme.json structure is invalid\n"); exit(1); } echo "theme.json is valid\n";'
