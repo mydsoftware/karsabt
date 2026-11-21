@@ -1,4 +1,5 @@
 <?php get_header(); ?>
+<?php if (!function_exists('elementor_theme_do_location') || !elementor_theme_do_location('archive')) : ?>
 <main id="main-content" class="page-content">
     <div class="container">
         <header class="section-head">
@@ -26,4 +27,5 @@
         <?php endif; ?>
     </div>
 </main>
+<?php endif; ?>
 <?php get_footer(); ?>
