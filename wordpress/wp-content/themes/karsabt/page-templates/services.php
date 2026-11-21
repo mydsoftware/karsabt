@@ -20,12 +20,12 @@ $is_elementor = get_post_meta(get_queried_object_id(), '_elementor_edit_mode', t
 <?php else : ?>
     <?php
     $services = array(
-        array('🏢', 'ثبت شرکت', 'ثبت انواع شرکت، تنظیم مدارک و پیگیری مراحل قانونی.', 'company', 'ثبت شرکت'),
-        array('™️', 'ثبت برند', 'انتخاب مسیر مناسب برای ثبت و حفاظت از نام و نشان تجاری.', 'trademark', 'ثبت برند'),
-        array('🪪', 'کارت بازرگانی', 'راهنمایی و پیگیری درخواست کارت بازرگانی.', 'other', 'کارت بازرگانی'),
-        array('🏠', 'مجوز مشاغل خانگی', 'راهنمای دریافت مجوز برای راه‌اندازی کسب‌وکار خانگی.', 'home_business', 'مجوز مشاغل خانگی'),
-        array('🛍️', 'پروانه کسب', 'راهنمایی مراحل دریافت پروانه کسب و مجوزهای صنفی.', 'business', 'پروانه کسب'),
-        array('📋', 'سایر خدمات اداری', 'بررسی درخواست شما و معرفی مسیر انجام امور اداری.', 'other', 'مشاوره خدمات'),
+        array('🏢', 'ثبت شرکت', 'ثبت انواع شرکت، تنظیم مدارک و پیگیری مراحل قانونی.', 'company', 'ثبت شرکت', 'sabt-sherkat'),
+        array('™️', 'ثبت برند', 'انتخاب مسیر مناسب برای ثبت و حفاظت از نام و نشان تجاری.', 'trademark', 'ثبت برند', 'sabt-brand'),
+        array('🪪', 'کارت بازرگانی', 'راهنمایی و پیگیری درخواست کارت بازرگانی.', 'other', 'کارت بازرگانی', 'kart-bazargani'),
+        array('🏠', 'مجوز مشاغل خانگی', 'راهنمای دریافت مجوز برای راه‌اندازی کسب‌وکار خانگی.', 'home_business', 'مجوز مشاغل خانگی', 'mojavez-mashaghel-khanegi'),
+        array('🛍️', 'پروانه کسب', 'راهنمایی مراحل دریافت پروانه کسب و مجوزهای صنفی.', 'business', 'پروانه کسب', 'parvane-kasb'),
+        array('📋', 'سایر خدمات اداری', 'بررسی درخواست شما و معرفی مسیر انجام امور اداری.', 'other', 'مشاوره خدمات', ''),
     );
     ?>
     <section class="ks-services-hero">
@@ -49,8 +49,12 @@ $is_elementor = get_post_meta(get_queried_object_id(), '_elementor_edit_mode', t
                         <span class="ks-service-item__icon" aria-hidden="true"><?php echo esc_html($service[0]); ?></span>
                         <h2><?php echo esc_html($service[1]); ?></h2>
                         <p><?php echo esc_html($service[2]); ?></p>
-                        <a class="ks-service-item__link" href="<?php echo esc_url(add_query_arg('service', $service[3], home_url('/#contact'))); ?>">
-                            ثبت درخواست <span aria-hidden="true">←</span>
+                        <?php
+                        $service_page = !empty($service[5]) ? get_page_by_path($service[5], OBJECT, 'page') : null;
+                        $service_url = ($service_page instanceof WP_Post && $service_page->post_status === 'publish') ? get_permalink($service_page) : add_query_arg('service', $service[3], home_url('/#contact'));
+                        ?>
+                        <a class="ks-service-item__link" href="<?php echo esc_url($service_url); ?>">
+                            <?php echo ($service_page instanceof WP_Post && $service_page->post_status === 'publish') ? 'مشاهده جزئیات' : 'ثبت درخواست'; ?> <span aria-hidden="true">←</span>
                         </a>
                     </article>
                 <?php endforeach; ?>
