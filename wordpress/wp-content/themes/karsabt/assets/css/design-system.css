@@ -1,0 +1,99 @@
+/*
+ * سامانه طراحی کارثبت
+ * توکن‌ها و کامپوننت‌های پایه برای قالب، بلوک‌ها و Elementor.
+ */
+:root {
+  --ks-color-primary: #0876d8;
+  --ks-color-primary-hover: #0755a9;
+  --ks-color-navy: #10264c;
+  --ks-color-text: #172846;
+  --ks-color-muted: #64748b;
+  --ks-color-surface: #eef5ff;
+  --ks-color-surface-soft: #f6f9ff;
+  --ks-color-border: #dce7f7;
+  --ks-color-success: #16834a;
+  --ks-color-white: #fff;
+  --ks-content-width: 1180px;
+  --ks-radius-sm: 10px;
+  --ks-radius-md: 16px;
+  --ks-radius-lg: 24px;
+  --ks-radius-pill: 999px;
+  --ks-shadow-sm: 0 5px 16px rgba(18, 57, 112, .07);
+  --ks-shadow-md: 0 12px 30px rgba(18, 57, 112, .09);
+  --ks-space-1: .5rem;
+  --ks-space-2: 1rem;
+  --ks-space-3: 1.5rem;
+  --ks-space-4: 2rem;
+  --ks-space-5: 3rem;
+  --ks-section-space: clamp(2.5rem, 6vw, 4.5rem);
+  --ks-font-body: Tahoma, Arial, sans-serif;
+  --ks-transition: 180ms ease;
+}
+
+.ks-container {
+  width: min(var(--ks-content-width), calc(100% - 2rem));
+  margin-inline: auto;
+}
+.ks-section { padding-block: var(--ks-section-space); }
+.ks-section-heading { max-width: 720px; margin: 0 auto 2rem; text-align: center; }
+.ks-section-heading__eyebrow {
+  display: inline-block; margin-bottom: .5rem; color: var(--ks-color-primary);
+  font-size: .875rem; font-weight: 800;
+}
+.ks-section-heading__title {
+  margin: 0; color: var(--ks-color-navy);
+  font-size: clamp(1.5rem, 3vw, 2.25rem); line-height: 1.45;
+}
+.ks-section-heading__description { margin: .5rem 0 0; color: var(--ks-color-muted); }
+.ks-card {
+  min-width: 0; padding: 1.25rem; background: var(--ks-color-white);
+  border: 1px solid var(--ks-color-border); border-radius: var(--ks-radius-lg);
+  box-shadow: var(--ks-shadow-sm); transition: transform var(--ks-transition), box-shadow var(--ks-transition), border-color var(--ks-transition);
+}
+.ks-card:hover { transform: translateY(-3px); border-color: #9bcaf0; box-shadow: var(--ks-shadow-md); }
+.ks-button {
+  display: inline-flex; min-height: 46px; align-items: center; justify-content: center;
+  gap: .5rem; padding: .7rem 1.35rem; border: 1px solid transparent;
+  border-radius: var(--ks-radius-pill); background: var(--ks-color-primary);
+  color: var(--ks-color-white); font: 800 1rem/1.5 var(--ks-font-body);
+  text-align: center; cursor: pointer; transition: background var(--ks-transition), transform var(--ks-transition);
+}
+.ks-button:hover { background: var(--ks-color-primary-hover); color: var(--ks-color-white); transform: translateY(-1px); }
+.ks-button--secondary { background: var(--ks-color-surface); color: var(--ks-color-primary); border-color: var(--ks-color-border); }
+.ks-button--secondary:hover { background: #dceeff; color: var(--ks-color-primary-hover); }
+.ks-badge {
+  display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .65rem;
+  border-radius: var(--ks-radius-pill); background: var(--ks-color-surface);
+  color: var(--ks-color-primary-hover); font-size: .8rem; font-weight: 800;
+}
+.ks-grid { display: grid; gap: 1rem; }
+.ks-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ks-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ks-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+body { font-family: var(--ks-font-body); color: var(--ks-color-text); }
+.btn { border-radius: var(--ks-radius-pill); transition: transform var(--ks-transition), background var(--ks-transition), box-shadow var(--ks-transition); }
+.service-card, .post-card, .contact-box { border-radius: var(--ks-radius-lg); }
+.service-card, .post-card { box-shadow: var(--ks-shadow-sm); }
+.service-card:focus-visible, .post-card a:focus-visible, .ks-button:focus-visible {
+  outline: 3px solid #f59e0b; outline-offset: 4px;
+}
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+  max-width: 100%; border: 1px solid var(--ks-color-border); border-radius: var(--ks-radius-sm);
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--ks-color-primary); outline: 2px solid rgba(8, 118, 216, .16); outline-offset: 1px;
+}
+.elementor-widget-button .elementor-button { border-radius: var(--ks-radius-pill); font-family: var(--ks-font-body); }
+.elementor-widget-heading .elementor-heading-title { line-height: 1.5; }
+@media (max-width: 760px) {
+  .ks-grid--3, .ks-grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ks-section-heading { margin-bottom: 1.5rem; }
+}
+@media (max-width: 480px) {
+  .ks-grid--2, .ks-grid--3, .ks-grid--4 { grid-template-columns: minmax(0, 1fr); }
+  .ks-card { padding: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ks-card, .ks-button, .btn { transition: none; }
+}
