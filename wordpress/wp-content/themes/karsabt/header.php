@@ -13,6 +13,8 @@
 $contact_location = karsabt_contact_value('karsabt_contact_location');
 $contact_email = karsabt_contact_value('karsabt_contact_email');
 $contact_phone = karsabt_contact_value('karsabt_contact_phone');
+$cta_label = get_theme_mod('karsabt_cta_label', 'ثبت سفارش آنلاین');
+$cta_url = get_theme_mod('karsabt_cta_url', home_url('/#contact'));
 if ($contact_location || $contact_email || $contact_phone) :
 ?>
 <div class="topbar"><div class="container topbar-inner">
@@ -40,7 +42,7 @@ if ($contact_location || $contact_email || $contact_phone) :
             ));
             ?>
         </nav>
-        <a class="btn header-cta" href="<?php echo esc_url(home_url('/#contact')); ?>">ثبت سفارش آنلاین ←</a>
+        <a class="btn header-cta" href="<?php echo esc_url($cta_url); ?>"><?php echo esc_html($cta_label); ?> ←</a>
     </div>
 </header>
 <?php endif; ?>
