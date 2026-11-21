@@ -34,3 +34,6 @@ jobs:
 
       - name: اجرای آزمون‌های مستقل OTP
         run: php tests/php/otp-service-test.php
+
+      - name: اجرای آزمون‌های مستقل OTP
+        run: php tests/otp-service-test.php
