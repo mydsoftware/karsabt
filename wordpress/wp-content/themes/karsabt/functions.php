@@ -259,7 +259,7 @@ function karsabt_output_seo_schema() {
         }
         $graph[] = array('@type' => 'BreadcrumbList', 'itemListElement' => $list);
     }
-    echo "\n<script type=\"application/ld+json\">" . wp_json_encode(array('@context' => 'https://schema.org', '@graph' => $graph), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>\n";
+    echo "\n<script type=\"application/ld+json\">" . wp_json_encode(array('@context' => 'https://schema.org', '@graph' => $graph), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . "</script>\n";
 }
 add_action('wp_head', 'karsabt_output_seo_schema', 20);
 
@@ -307,7 +307,7 @@ function karsabt_render_faq_meta_box($post) {
 
 function karsabt_save_service_faq($post_id) {
     if (!isset($_POST['karsabt_service_faq_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['karsabt_service_faq_nonce'])), 'karsabt_save_service_faq')) { return; }
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) { return; }
+    if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || wp_is_post_revision($post_id)) { return; }
     if (!current_user_can('edit_page', $post_id)) { return; }
     if (!isset($_POST['karsabt_service_faq'])) { delete_post_meta($post_id, '_karsabt_service_faq'); return; }
     $raw = sanitize_textarea_field(wp_unslash($_POST['karsabt_service_faq']));
