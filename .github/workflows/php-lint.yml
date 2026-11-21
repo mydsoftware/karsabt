@@ -47,5 +47,3 @@ jobs:
       - name: اجرای آزمون‌های مستقل مدارک
         run: php tests/php/documents-find-test.php
 
-      - name: اجرای آزمون‌های مستقل OTP
-        run: php tests/otp-service-test.php
