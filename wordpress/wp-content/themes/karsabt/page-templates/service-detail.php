@@ -22,7 +22,7 @@ $is_elementor = get_post_meta(get_queried_object_id(), '_elementor_edit_mode', t
             <?php else : ?>
                 <p class="ks-service-detail__intro">برای آشنایی با مراحل، شرایط و مدارک موردنیاز این خدمت، توضیحات را مطالعه کنید.</p>
             <?php endif; ?>
-            <a class="ks-button" href="<?php echo esc_url(add_query_arg('service', get_the_title(), home_url('/#contact'))); ?>">ثبت درخواست این خدمت</a>
+            <a class="ks-button" href="<?php echo esc_url(add_query_arg('service', $karsabt_service_key, home_url('/#contact'))); ?>">ثبت درخواست این خدمت</a>
         </div>
     </section>
 
