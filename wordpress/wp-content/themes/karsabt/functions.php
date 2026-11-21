@@ -44,6 +44,38 @@ function karsabt_register_elementor_locations($elementor_theme_manager) {
 }
 add_action('elementor/theme/register_locations', 'karsabt_register_elementor_locations');
 
+
+/** تنظیمات اطلاعات تماس و نشانی کسب‌وکار از طریق سفارشی‌ساز وردپرس. */
+function karsabt_customize_register($wp_customize) {
+    $wp_customize->add_section('karsabt_contact', array(
+        'title' => 'اطلاعات تماس کارثبت',
+        'priority' => 35,
+        'description' => 'اطلاعات واقعی کسب‌وکار را وارد کنید. فیلدهای خالی در سایت نمایش داده نمی‌شوند.',
+    ));
+    $fields = array(
+        'karsabt_contact_phone' => array('تلفن تماس', 'text', ''),
+        'karsabt_contact_email' => array('ایمیل تماس', 'email', ''),
+        'karsabt_contact_location' => array('نشانی یا محدوده فعالیت', 'text', ''),
+    );
+    foreach ($fields as $setting => $field) {
+        $wp_customize->add_setting($setting, array(
+            'default' => $field[2],
+            'sanitize_callback' => $field[1] === 'email' ? 'sanitize_email' : 'sanitize_text_field',
+            'transport' => 'refresh',
+        ));
+        $wp_customize->add_control($setting, array(
+            'section' => 'karsabt_contact',
+            'label' => $field[0],
+            'type' => $field[1],
+        ));
+    }
+}
+add_action('customize_register', 'karsabt_customize_register');
+
+function karsabt_contact_value($key) {
+    return trim((string) get_theme_mod($key, ''));
+}
+
 /** تشخیص افزونه‌های سئو برای جلوگیری از تولید متادیتای تکراری. */
 function karsabt_has_seo_plugin() {
     return defined('WPSEO_VERSION') || defined('RANK_MATH_VERSION') ||
