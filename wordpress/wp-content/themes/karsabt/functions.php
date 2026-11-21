@@ -38,6 +38,16 @@ function karsabt_assets() {
     $script_version = file_exists($script_path) ? (string) filemtime($script_path) : $theme_version;
 
     wp_enqueue_style('karsabt-style', get_stylesheet_uri(), array(), $style_version);
+
+    $design_system_path = get_template_directory() . '/assets/css/design-system.css';
+    $design_system_version = file_exists($design_system_path) ? (string) filemtime($design_system_path) : $theme_version;
+    wp_enqueue_style(
+        'karsabt-design-system',
+        get_template_directory_uri() . '/assets/css/design-system.css',
+        array('karsabt-style'),
+        $design_system_version
+    );
+
     wp_enqueue_script('karsabt-main', get_template_directory_uri() . '/assets/js/theme.js', array(), $script_version, true);
 }
 add_action('wp_enqueue_scripts', 'karsabt_assets');
