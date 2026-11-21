@@ -273,6 +273,31 @@ function karsabt_output_seo_schema() {
     }
     $graph[] = $organization;
 
+    $graph[] = array(
+        '@type' => 'WebSite',
+        '@id' => home_url('/#website'),
+        'url' => home_url('/'),
+        'name' => get_bloginfo('name'),
+        'inLanguage' => 'fa-IR',
+        'publisher' => array('@id' => home_url('/#organization')),
+    );
+
+    if (is_singular()) {
+        $page_post = get_queried_object();
+        if ($page_post instanceof WP_Post) {
+            $graph[] = array(
+                '@type' => 'WebPage',
+                '@id' => get_permalink($page_post) . '#webpage',
+                'url' => get_permalink($page_post),
+                'name' => get_the_title($page_post),
+                'description' => wp_strip_all_tags(karsabt_get_meta_description()),
+                'inLanguage' => 'fa-IR',
+                'isPartOf' => array('@id' => home_url('/#website')),
+                'about' => array('@id' => home_url('/#organization')),
+            );
+        }
+    }
+
     $items = karsabt_get_breadcrumb_items();
     if (count($items) > 1) {
         $list = array();
@@ -283,7 +308,7 @@ function karsabt_output_seo_schema() {
         }
         $graph[] = array('@type' => 'BreadcrumbList', 'itemListElement' => $list);
     }
-    echo "\n<script type=\"application/ld+json\">" . wp_json_encode(array('@context' => 'https://schema.org', '@graph' => $graph), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . "</script>\n";
+    echo "\n<script type=\"application/ld+json\">" . wp_json_encode(array('@context' => 'https://schema.org', '@graph' => $graph), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . "</script>\n";
 }
 add_action('wp_head', 'karsabt_output_seo_schema', 20);
 
