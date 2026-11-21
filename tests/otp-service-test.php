@@ -80,11 +80,12 @@ foreach (array_keys($GLOBALS['karsabt_test_transients']) as $key) {
     if (strpos($key, 'karsabt_otp_cooldown_') === 0) { delete_transient($key); }
 }
 test_assert(true === Karsabt_OTP_Service::send($mobile), 'ارسال کد برای آزمون سقف تلاش');
+$wrong_code = '000000' === $GLOBALS['karsabt_test_otp_code'] ? '111111' : '000000';
 for ($i = 1; $i <= 5; $i++) {
-    $attempt = Karsabt_OTP_Service::verify($mobile, '000000');
+    $attempt = Karsabt_OTP_Service::verify($mobile, $wrong_code);
     test_assert($attempt instanceof WP_Error, 'رد تلاش اشتباه شماره ' . $i);
 }
-$blocked = Karsabt_OTP_Service::verify($mobile, '000000');
-test_assert($blocked instanceof WP_Error && 'otp_attempts_exceeded' === $blocked->get_error_code(), 'مسدودسازی پس از پنج تلاش ناموفق');
+$blocked = Karsabt_OTP_Service::verify($mobile, $wrong_code);
+test_assert($blocked instanceof WP_Error && 'otp_expired' === $blocked->get_error_code(), 'حذف کد پس از پنج تلاش ناموفق');
 
 echo "تمام آزمون‌های OTP با موفقیت اجرا شدند.\n";
