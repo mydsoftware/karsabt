@@ -26,3 +26,34 @@ Text Domain: karsabt
 .elementor-page-content>.elementor{width:100%;max-width:100%}
 .elementor-page .page-content{padding-top:0;padding-bottom:0}
 .elementor-page .entry-content{font-size:inherit;line-height:inherit}
+
+/* لایه تکمیلی CSS مدرن و واکنش‌گرا */
+:root {
+  color-scheme: light;
+  --content-width: 1180px;
+  --radius-card: 1.125rem;
+  --space-section: clamp(2.5rem, 6vw, 4.5rem);
+}
+.container { width: min(var(--content-width), calc(100% - 2rem)); }
+.section { padding-block: var(--space-section); }
+.service-card, .post-card, .contact-box { border-radius: var(--radius-card); }
+img, video, iframe { max-width: 100%; }
+button, input, select, textarea { font: inherit; }
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 3px;
+}
+@supports (container-type: inline-size) {
+  .services-grid, .posts-grid { container-type: inline-size; }
+  @container (max-width: 520px) {
+    .service-card { padding: 1rem .65rem; }
+    .post-content { padding: 1rem; }
+  }
+}
+@media (min-width: 1200px) {
+  .hero h1 { font-size: clamp(3rem, 5vw, 4.25rem); }
+}
+@media (prefers-contrast: more) {
+  :root { --muted: #40516a; --line: #9aabc1; }
+  .btn { box-shadow: none; }
+}
