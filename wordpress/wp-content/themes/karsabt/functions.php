@@ -259,7 +259,7 @@ function karsabt_output_seo_schema() {
         }
         $graph[] = array('@type' => 'BreadcrumbList', 'itemListElement' => $list);
     }
-    echo "\n<script type=\"application/ld+json\">" . wp_json_encode(array('@context' => 'https://schema.org', '@graph' => $graph), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . "</script>\n";
+    echo "\n<script type=\"application/ld+json\">" . wp_json_encode(array('@context' => 'https://schema.org', '@graph' => $graph), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . "</script>\n";
 }
 add_action('wp_head', 'karsabt_output_seo_schema', 20);
 
@@ -280,7 +280,7 @@ function karsabt_output_service_schema() {
         'provider' => array('@id' => home_url('/#organization')),
         'areaServed' => array('@type' => 'Country', 'name' => 'ایران'),
     );
-    echo '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>';
+    echo '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . '</script>';
 }
 add_action('wp_head', 'karsabt_output_service_schema', 22);
 
@@ -336,6 +336,6 @@ function karsabt_output_service_faq_schema() {
     }
     if (!$entities) { return; }
     $schema = array('@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $entities);
-    echo "\n<script type=\"application/ld+json\">" . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>\n";
+    echo "\n<script type=\"application/ld+json\">" . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . "</script>\n";
 }
 add_action('wp_head', 'karsabt_output_service_faq_schema', 21);
