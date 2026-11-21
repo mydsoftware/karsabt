@@ -69,3 +69,110 @@ function karsabt_register_elementor_locations($elementor_theme_manager) {
     }
 }
 add_action('elementor/theme/register_locations', 'karsabt_register_elementor_locations');
+
+
+/**
+ * جعبه پرسش‌های متداول صفحات خدمات.
+ * هر خط با قالب «پرسش | پاسخ» ذخیره می‌شود.
+ */
+function karsabt_add_faq_meta_box() {
+    add_meta_box(
+        'karsabt-service-faq',
+        'پرسش‌های متداول خدمت',
+        'karsabt_render_faq_meta_box',
+        'page',
+        'normal',
+        'default'
+    );
+}
+add_action('add_meta_boxes', 'karsabt_add_faq_meta_box');
+
+function karsabt_render_faq_meta_box($post) {
+    wp_nonce_field('karsabt_save_service_faq', 'karsabt_service_faq_nonce');
+    $items = get_post_meta($post->ID, '_karsabt_service_faq', true);
+    $lines = array();
+    if (is_array($items)) {
+        foreach ($items as $item) {
+            if (!empty($item['question']) && !empty($item['answer'])) {
+                $lines[] = $item['question'] . ' | ' . $item['answer'];
+            }
+        }
+    }
+    ?>
+    <p>هر پرسش و پاسخ را در یک خط وارد کنید و بین آن‌ها از علامت | استفاده کنید.</p>
+    <textarea name="karsabt_service_faq" rows="8" style="width:100%" placeholder="برای ثبت شرکت چه مدارکی لازم است؟ | مدارک بسته به نوع شرکت متفاوت است."><?php echo esc_textarea(implode("\n", $lines)); ?></textarea>
+    <?php
+}
+
+function karsabt_save_service_faq($post_id) {
+    if (!isset($_POST['karsabt_service_faq_nonce']) ||
+        !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['karsabt_service_faq_nonce'])), 'karsabt_save_service_faq')) {
+        return;
+    }
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    if (!current_user_can('edit_page', $post_id)) {
+        return;
+    }
+    if (!isset($_POST['karsabt_service_faq'])) {
+        delete_post_meta($post_id, '_karsabt_service_faq');
+        return;
+    }
+
+    $raw = sanitize_textarea_field(wp_unslash($_POST['karsabt_service_faq']));
+    $items = array();
+    foreach (preg_split('/\r\n|\r|\n/', $raw) as $line) {
+        $parts = explode('|', $line, 2);
+        if (count($parts) !== 2) {
+            continue;
+        }
+        $question = sanitize_text_field(trim($parts[0]));
+        $answer = sanitize_textarea_field(trim($parts[1]));
+        if ($question !== '' && $answer !== '') {
+            $items[] = array('question' => $question, 'answer' => $answer);
+        }
+    }
+
+    if ($items) {
+        update_post_meta($post_id, '_karsabt_service_faq', $items);
+    } else {
+        delete_post_meta($post_id, '_karsabt_service_faq');
+    }
+}
+add_action('save_post_page', 'karsabt_save_service_faq');
+
+/** نمایش FAQPage JSON-LD فقط زمانی که پرسش و پاسخ واقعی ثبت شده باشد. */
+function karsabt_output_service_faq_schema() {
+    if (!is_singular('page')) {
+        return;
+    }
+    $items = get_post_meta(get_queried_object_id(), '_karsabt_service_faq', true);
+    if (!is_array($items) || !$items) {
+        return;
+    }
+    $entities = array();
+    foreach ($items as $item) {
+        if (empty($item['question']) || empty($item['answer'])) {
+            continue;
+        }
+        $entities[] = array(
+            '@type' => 'Question',
+            'name' => wp_strip_all_tags($item['question']),
+            'acceptedAnswer' => array(
+                '@type' => 'Answer',
+                'text' => wp_strip_all_tags($item['answer']),
+            ),
+        );
+    }
+    if (!$entities) {
+        return;
+    }
+    $schema = array(
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => $entities,
+    );
+    echo "\n<script type=\"application/ld+json\">" . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>\n";
+}
+add_action('wp_head', 'karsabt_output_service_faq_schema');
