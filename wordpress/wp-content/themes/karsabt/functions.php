@@ -18,6 +18,8 @@ function karsabt_setup() {
     ));
     add_theme_support('responsive-embeds');
     add_theme_support('align-wide');
+    add_theme_support('editor-styles');
+    add_editor_style('assets/css/editor-style.css');
     // پشتیبانی پایه از Elementor و امکان استفاده از قالب‌ساز آن.
     add_theme_support('elementor');
     register_nav_menus(array(
