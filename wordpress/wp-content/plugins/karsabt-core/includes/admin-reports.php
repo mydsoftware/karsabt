@@ -30,6 +30,7 @@ function karsabt_admin_reports_collect($month) {
     $start_sql = $start->format('Y-m-d H:i:s');
     $end_sql = $end->format('Y-m-d H:i:s');
     $overdue_before = (new DateTime('now', wp_timezone()))->modify('-7 days')->format('Y-m-d H:i:s');
+    $today = wp_date('Y-m-d');
 
     $ids = get_posts(array(
         'post_type' => 'karsabt_order',
@@ -60,9 +61,12 @@ function karsabt_admin_reports_collect($month) {
         $created = get_post_field('post_date', $id);
         if (isset($summary['by_status'][$status])) { $summary['by_status'][$status]++; }
         if ($created >= $start_sql && $created < $end_sql) { $summary['created_month']++; }
-        if (!in_array($status, array('completed', 'rejected'), true) && $created < $overdue_before) {
-            $summary['overdue']++;
-        }
+        $due_date = get_post_meta($id, '_karsabt_due_date', true);
+        $is_overdue = !in_array($status, array('completed', 'rejected'), true) && (
+            (is_string($due_date) && preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $due_date) && $due_date < $today)
+            || ((!$due_date || !preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', (string) $due_date)) && $created < $overdue_before)
+        );
+        if ($is_overdue) { $summary['overdue']++; }
 
         if ($assignee) {
             if (!isset($summary['staff'][$assignee])) {
@@ -119,7 +123,7 @@ function karsabt_admin_reports_collect($month) {
             'status' => isset($statuses[$status]) ? $statuses[$status] : 'نامشخص',
             'created' => $created,
             'assignee' => $assignee,
-            'overdue' => (!in_array($status, array('completed', 'rejected'), true) && $created < $overdue_before),
+            'overdue' => $is_overdue,
         );
     }
 
@@ -138,7 +142,7 @@ function karsabt_admin_reports_render() {
     $data = karsabt_admin_reports_collect($month);
 
     echo '<div class="wrap"><h1>گزارش مدیریتی کارثبت</h1>';
-    echo '<p>این گزارش فقط برای مدیران قابل مشاهده است. پرونده معوق یعنی درخواست باز با عمر بیش از ۷ روز.</p>';
+    echo '<p>این گزارش فقط برای مدیران قابل مشاهده است. پرونده معوق یعنی درخواست باز با مهلت هدف گذشته؛ در نبود مهلت معتبر، عمر بیش از ۷ روز ملاک است.</p>';
     echo '<form method="get" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
     echo '<input type="hidden" name="post_type" value="karsabt_order"><input type="hidden" name="page" value="karsabt-admin-reports">';
     echo '<label for="karsabt-report-month">ماه گزارش</label><input id="karsabt-report-month" type="month" name="report_month" value="' . esc_attr($month) . '">';
@@ -173,7 +177,7 @@ function karsabt_admin_reports_render() {
     }
     echo '</tbody></table>';
 
-    echo '<h2 style="margin-top:24px">پرونده‌های معوق (بیش از ۷ روز)</h2><table class="widefat striped"><thead><tr><th>کد پیگیری</th><th>مشتری</th><th>خدمت</th><th>وضعیت</th><th>تاریخ ثبت</th><th>مسئول</th><th>پرونده</th></tr></thead><tbody>';
+    echo '<h2 style="margin-top:24px">پرونده‌های معوق (مهلت گذشته / بدون مهلت و بیش از ۷ روز)</h2><table class="widefat striped"><thead><tr><th>کد پیگیری</th><th>مشتری</th><th>خدمت</th><th>وضعیت</th><th>تاریخ ثبت</th><th>مسئول</th><th>پرونده</th></tr></thead><tbody>';
     $overdue_rows = array_filter($data['orders'], function($order) { return $order['overdue']; });
     if (!$overdue_rows) {
         echo '<tr><td colspan="7">پرونده معوقی وجود ندارد.</td></tr>';
