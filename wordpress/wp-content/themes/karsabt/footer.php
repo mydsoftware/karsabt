@@ -30,7 +30,9 @@ if ($contact_location || $contact_email || $contact_phone) :
 <?php if ($contact_phone) : ?><p>تلفن: <a href="tel:<?php echo esc_attr(preg_replace('/[^0-9+]/', '', $contact_phone)); ?>"><?php echo esc_html($contact_phone); ?></a></p><?php endif; ?>
 </div>
 <?php endif; ?>
-</div><div class="footer-bottom">© <?php echo esc_html(date_i18n('Y')); ?> کارثبت. تمامی حقوق محفوظ است.</div></div></footer>
+</div><div class="footer-bottom">© <?php echo esc_html(date_i18n('Y')); ?> <?php echo esc_html(get_bloginfo('name')); ?>. <?php echo esc_html(get_theme_mod('karsabt_footer_copyright', 'تمامی حقوق محفوظ است.')); ?></div></div></footer>
 <?php endif; ?>
+<?php if (get_theme_mod('karsabt_show_mobile_cta', true)) : ?>
 <div class="mobile-cta"><a class="btn" href="<?php echo esc_url($karsabt_cta_url); ?>"><?php echo esc_html($karsabt_cta_label); ?></a></div>
+<?php endif; ?>
 <?php wp_footer(); ?></body></html>
