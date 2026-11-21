@@ -17,7 +17,18 @@ wp_nav_menu(array(
 <p><a href="<?php echo esc_url(home_url('/#contact')); ?>">ثبت سفارش</a></p>
 <?php endif; ?>
 </div>
-<div><h3>ارتباط با ما</h3><p>دزفول، خوزستان</p><p>ایمیل: info@karsabt.ir</p><p>شماره تماس: پس از تأیید مالک درج شود</p></div>
+<?php
+$contact_location = karsabt_contact_value('karsabt_contact_location');
+$contact_email = karsabt_contact_value('karsabt_contact_email');
+$contact_phone = karsabt_contact_value('karsabt_contact_phone');
+if ($contact_location || $contact_email || $contact_phone) :
+?>
+<div><h3>ارتباط با ما</h3>
+<?php if ($contact_location) : ?><p><?php echo esc_html($contact_location); ?></p><?php endif; ?>
+<?php if ($contact_email) : ?><p>ایمیل: <a href="mailto:<?php echo esc_attr($contact_email); ?>"><?php echo esc_html($contact_email); ?></a></p><?php endif; ?>
+<?php if ($contact_phone) : ?><p>تلفن: <a href="tel:<?php echo esc_attr(preg_replace('/[^0-9+]/', '', $contact_phone)); ?>"><?php echo esc_html($contact_phone); ?></a></p><?php endif; ?>
+</div>
+<?php endif; ?>
 </div><div class="footer-bottom">© <?php echo esc_html(date_i18n('Y')); ?> کارثبت. تمامی حقوق محفوظ است.</div></div></footer>
 <?php endif; ?>
 <div class="mobile-cta"><a class="btn" href="<?php echo esc_url(home_url('/#contact')); ?>">ثبت سفارش آنلاین</a></div>
