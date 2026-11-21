@@ -20,3 +20,9 @@ Text Domain: karsabt
 .main-nav a:focus-visible,.btn:focus-visible{outline-offset:4px}
 .screen-reader-text{border:0;clip:rect(1px,1px,1px,1px);clip-path:inset(50%);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute!important;width:1px;white-space:nowrap}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* سازگاری با Elementor: محتوای صفحه‌ساز نباید داخل عرض محدود قالب محصور شود. */
+.elementor-page-content{width:100%;max-width:none;margin:0;padding:0}
+.elementor-page-content>.elementor{width:100%;max-width:100%}
+.elementor-page .page-content{padding-top:0;padding-bottom:0}
+.elementor-page .entry-content{font-size:inherit;line-height:inherit}
