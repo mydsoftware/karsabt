@@ -16,10 +16,10 @@ require dirname(__DIR__, 2) . '/wordpress/wp-content/plugins/karsabt-core/includ
 
 function docs_assert($condition, $message) {
     if (!$condition) {
-        fwrite(STDERR, "FAIL: {$message}\\n");
+        fwrite(STDERR, "FAIL: {$message}\n");
         exit(1);
     }
-    echo "PASS: {$message}\\n";
+    echo "PASS: {$message}\n";
 }
 
 $order_id = 42;
@@ -43,4 +43,4 @@ $GLOBALS['karsabt_test_post_meta'][$order_id]['_karsabt_documents'] = 'metadata-
 list($corrupt,) = karsabt_docs_find($order_id, $valid_id);
 docs_assert(null === $corrupt, 'مدیریت متادیتای غیرآرایه بدون خطا');
 
-echo "تمام آزمون‌های جست‌وجوی مدارک با موفقیت اجرا شدند.\\n";
+echo "تمام آزمون‌های جست‌وجوی مدارک با موفقیت اجرا شدند.\n";
