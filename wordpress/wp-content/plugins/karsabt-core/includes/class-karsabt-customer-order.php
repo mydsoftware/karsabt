@@ -138,9 +138,7 @@ function karsabt_customer_order_detail_portal() {
             echo '<li>' . esc_html($doc['name'] ?? 'مدرک') . ' — ' .
                 esc_html($categories[$doc['category'] ?? ''] ?? 'سایر مدارک') . ' — ' .
                 esc_html($states[$doc['status'] ?? ''] ?? 'در انتظار بررسی');
-            if (!empty($doc['admin_note'])) {
-                echo '<p>توضیح مدیر: ' . esc_html($doc['admin_note']) . '</p>';
-            }
+            // یادداشت داخلی مدیر نباید در پنل مشتری نمایش داده شود.
             echo ' <a href="' . esc_url($url) . '">دریافت فایل</a></li>';
         }
         echo '</ul>';
