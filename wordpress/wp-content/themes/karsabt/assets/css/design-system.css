@@ -140,3 +140,16 @@ input:focus, select:focus, textarea:focus {
   .ks-service-detail__content { grid-template-columns: minmax(0, 1fr); }
   .ks-service-detail__aside { position: static; }
 }
+
+
+/* پرسش‌های متداول صفحات خدمات */
+.ks-service-faq { background: var(--ks-color-surface-soft); }
+.ks-service-faq__list { max-width: 900px; margin-inline: auto; display: grid; gap: .75rem; }
+.ks-service-faq__item { overflow: hidden; border: 1px solid var(--ks-color-border); border-radius: var(--ks-radius-md); background: #fff; }
+.ks-service-faq__item summary { position: relative; padding: 1rem 1.25rem; color: var(--ks-color-navy); font-weight: 800; cursor: pointer; list-style: none; }
+.ks-service-faq__item summary::-webkit-details-marker { display: none; }
+.ks-service-faq__item summary::after { content: "+"; float: left; color: var(--ks-color-primary); font-size: 1.25rem; line-height: 1.4; }
+.ks-service-faq__item[open] summary::after { content: "−"; }
+.ks-service-faq__item summary:focus-visible { outline: 3px solid #f59e0b; outline-offset: -3px; }
+.ks-service-faq__answer { padding: 0 1.25rem 1rem; color: var(--ks-color-muted); line-height: 2; }
+.ks-service-faq__answer p { margin: 0; }
