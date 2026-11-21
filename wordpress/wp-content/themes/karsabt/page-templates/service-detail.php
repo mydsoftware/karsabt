@@ -45,6 +45,30 @@ $is_elementor = get_post_meta(get_queried_object_id(), '_elementor_edit_mode', t
             </div>
         </section>
     <?php endif; ?>
+    <?php
+    $karsabt_faq_items = get_post_meta(get_the_ID(), '_karsabt_service_faq', true);
+    if (is_array($karsabt_faq_items) && $karsabt_faq_items) :
+    ?>
+        <section class="ks-section ks-service-faq" aria-labelledby="ks-service-faq-title">
+            <div class="ks-container">
+                <header class="ks-section-heading">
+                    <span class="ks-section-heading__eyebrow">پاسخ پرسش‌های شما</span>
+                    <h2 class="ks-section-heading__title" id="ks-service-faq-title">سؤالات متداول</h2>
+                </header>
+                <div class="ks-service-faq__list">
+                    <?php foreach ($karsabt_faq_items as $faq_item) :
+                        if (empty($faq_item['question']) || empty($faq_item['answer'])) { continue; }
+                    ?>
+                        <details class="ks-service-faq__item">
+                            <summary><?php echo esc_html($faq_item['question']); ?></summary>
+                            <div class="ks-service-faq__answer"><?php echo wpautop(esc_html($faq_item['answer'])); ?></div>
+                        </details>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </section>
+    <?php endif; ?>
+
     <section class="ks-section ks-services-cta">
         <div class="ks-container ks-services-cta__box">
             <div><h2>برای این خدمت به راهنمایی نیاز دارید؟</h2><p>درخواست خود را ثبت کنید تا برای مراحل بعدی راهنمایی شوید.</p></div>
