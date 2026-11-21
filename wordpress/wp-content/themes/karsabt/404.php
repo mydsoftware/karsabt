@@ -4,7 +4,7 @@
  */
 get_header();
 ?>
-<main class="page-content">
+<main id="main-content" class="page-content">
   <div class="container">
     <section class="error-page content-card">
       <div class="error-code">۴۰۴</div>
