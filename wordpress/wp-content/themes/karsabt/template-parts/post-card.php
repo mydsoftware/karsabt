@@ -11,7 +11,11 @@ if (!defined('ABSPATH')) {
 <article <?php post_class('post-card'); ?>>
     <a class="post-card-image" href="<?php the_permalink(); ?>" aria-label="<?php echo esc_attr(sprintf('مطالعه %s', get_the_title())); ?>">
         <?php if (has_post_thumbnail()) : ?>
-            <?php the_post_thumbnail('large', array('loading' => 'lazy')); ?>
+            <?php the_post_thumbnail('karsabt-card', array(
+                'loading' => 'lazy',
+                'decoding' => 'async',
+                'sizes' => '(max-width: 760px) 100vw, 33vw',
+            )); ?>
         <?php else : ?>
             <div class="post-card-placeholder" aria-hidden="true">📚</div>
         <?php endif; ?>
