@@ -1,7 +1,7 @@
 <!doctype html>
 <html <?php language_attributes(); ?>>
 <head><meta charset="<?php bloginfo('charset'); ?>"><meta name="viewport" content="width=device-width, initial-scale=1"><?php wp_head(); ?></head>
-<body <?php body_class(); ?>><?php wp_body_open(); ?>
+<body <?php body_class(); ?>><?php wp_body_open(); ?><a class="skip-link" href="#main-content">رفتن به محتوای اصلی</a>
 <?php
 $karsabt_phone = get_theme_mod('karsabt_phone', '');
 $karsabt_email = get_theme_mod('karsabt_email', 'info@karsabt.ir');
