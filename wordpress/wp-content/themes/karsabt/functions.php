@@ -56,6 +56,36 @@ function karsabt_customize_register($wp_customize) {
         'priority' => 35,
         'description' => 'اطلاعات واقعی کسب‌وکار را وارد کنید. فیلدهای خالی در سایت نمایش داده نمی‌شوند.',
     ));
+    $wp_customize->add_setting('karsabt_footer_description', array(
+        'default' => 'سامانه خدمات ثبتی و اداری؛ همراه شما برای انجام امور کسب‌وکار.',
+        'sanitize_callback' => 'sanitize_textarea_field',
+        'transport' => 'refresh',
+    ));
+    $wp_customize->add_control('karsabt_footer_description', array(
+        'section' => 'karsabt_contact',
+        'label' => 'توضیحات پایین صفحه',
+        'type' => 'textarea',
+    ));
+    $wp_customize->add_setting('karsabt_cta_label', array(
+        'default' => 'ثبت سفارش آنلاین',
+        'sanitize_callback' => 'sanitize_text_field',
+        'transport' => 'refresh',
+    ));
+    $wp_customize->add_control('karsabt_cta_label', array(
+        'section' => 'karsabt_contact',
+        'label' => 'متن دکمه ثبت سفارش',
+        'type' => 'text',
+    ));
+    $wp_customize->add_setting('karsabt_cta_url', array(
+        'default' => home_url('/#contact'),
+        'sanitize_callback' => 'esc_url_raw',
+        'transport' => 'refresh',
+    ));
+    $wp_customize->add_control('karsabt_cta_url', array(
+        'section' => 'karsabt_contact',
+        'label' => 'پیوند دکمه ثبت سفارش',
+        'type' => 'url',
+    ));
     $fields = array(
         'karsabt_contact_phone' => array('تلفن تماس', 'text', ''),
         'karsabt_contact_email' => array('ایمیل تماس', 'email', ''),
@@ -232,6 +262,27 @@ function karsabt_output_seo_schema() {
     echo "\n<script type=\"application/ld+json\">" . wp_json_encode(array('@context' => 'https://schema.org', '@graph' => $graph), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>\n";
 }
 add_action('wp_head', 'karsabt_output_seo_schema', 20);
+
+/** داده ساختاریافته خدمت برای برگه‌هایی که از الگوی جزئیات خدمت استفاده می‌کنند. */
+function karsabt_output_service_schema() {
+    if (is_admin() || !is_singular('page') || karsabt_has_seo_plugin()) { return; }
+    if (get_page_template_slug(get_queried_object_id()) !== 'page-templates/service-detail.php') { return; }
+    $post = get_queried_object();
+    if (!$post instanceof WP_Post) { return; }
+    $description = has_excerpt($post) ? get_the_excerpt($post) : wp_trim_words(wp_strip_all_tags(strip_shortcodes($post->post_content)), 35, '…');
+    $schema = array(
+        '@context' => 'https://schema.org',
+        '@type' => 'Service',
+        'name' => get_the_title($post),
+        'serviceType' => get_the_title($post),
+        'url' => get_permalink($post),
+        'description' => wp_strip_all_tags($description),
+        'provider' => array('@id' => home_url('/#organization')),
+        'areaServed' => array('@type' => 'Country', 'name' => 'ایران'),
+    );
+    echo "\\n<script type=\\"application/ld+json\\">" . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</script>\\n";
+}
+add_action('wp_head', 'karsabt_output_service_schema', 22);
 
 /** جعبه پرسش‌های متداول صفحات خدمات؛ هر خط با قالب «پرسش | پاسخ». */
 function karsabt_add_faq_meta_box() {
