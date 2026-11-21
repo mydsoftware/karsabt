@@ -376,6 +376,7 @@ add_action('save_post_page', 'karsabt_save_service_faq');
 
 function karsabt_output_service_faq_schema() {
     if (!is_singular('page') || karsabt_has_seo_plugin()) { return; }
+    if (get_page_template_slug(get_queried_object_id()) !== 'page-templates/service-detail.php') { return; }
     $items = get_post_meta(get_queried_object_id(), '_karsabt_service_faq', true);
     if (!is_array($items) || !$items) { return; }
     $entities = array();
