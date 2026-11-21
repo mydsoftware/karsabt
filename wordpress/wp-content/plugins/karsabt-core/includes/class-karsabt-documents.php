@@ -233,8 +233,12 @@ function karsabt_docs_download_handler() {
         !wp_verify_nonce(sanitize_text_field(wp_unslash($_REQUEST['_wpnonce'] ?? '')), 'karsabt_document_download_'.$order_id.'_'.$document_id)) {
         wp_die('درخواست معتبر نیست.', '', array('response'=>403));
     }
+    $order = get_post($order_id);
+    if (!$order || 'karsabt_order' !== $order->post_type || 'private' !== $order->post_status) {
+        wp_die('درخواست موردنظر پیدا نشد.', '', array('response'=>404));
+    }
     $is_admin = current_user_can('manage_options');
-    $owner = is_user_logged_in() && (int)get_post_meta($order_id, '_karsabt_customer_user_id', true) === get_current_user_id();
+    $owner = is_user_logged_in() && (int) get_post_meta($order_id, '_karsabt_customer_user_id', true) === get_current_user_id();
     if (!$is_admin && !$owner) { wp_die('دسترسی مجاز نیست.', '', array('response'=>403)); }
     list($doc,) = karsabt_docs_find($order_id, $document_id);
     $dir = karsabt_docs_private_dir();
@@ -251,6 +255,9 @@ function karsabt_docs_download_handler() {
         wp_die('فایل موجود نیست یا معتبر نیست.', '', array('response'=>404));
     }
     $path = $real_path;
+    if (!is_readable($path) || !is_file($path) || filesize($path) > 5 * 1024 * 1024) {
+        wp_die('فایل موجود نیست یا از محدودیت اندازه مجاز عبور کرده است.', '', array('response'=>404));
+    }
     nocache_headers();
     header('X-Content-Type-Options: nosniff');
     header('Content-Security-Policy: default-src none; sandbox');
