@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const navigation = document.querySelector('.main-nav');
     if (!button || !navigation) return;
 
+    const mobileQuery = window.matchMedia('(max-width: 760px)');
+
     const closeMenu = function (returnFocus) {
         navigation.classList.remove('is-open');
         button.setAttribute('aria-expanded', 'false');
@@ -13,8 +15,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const isOpen = button.getAttribute('aria-expanded') === 'true';
         navigation.classList.toggle('is-open', !isOpen);
         button.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
-        if (!isOpen) {
-            const firstLink = navigation.querySelector('a');
+        if (!isOpen && mobileQuery.matches) {
+            const firstLink = navigation.querySelector('a[href]');
             if (firstLink) firstLink.focus();
         }
     });
@@ -35,7 +37,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    window.addEventListener('resize', function () {
-        if (window.innerWidth > 760) closeMenu(false);
-    });
+    const handleViewportChange = function () {
+        if (!mobileQuery.matches) closeMenu(false);
+    };
+    if (typeof mobileQuery.addEventListener === 'function') {
+        mobileQuery.addEventListener('change', handleViewportChange);
+    } else if (typeof mobileQuery.addListener === 'function') {
+        mobileQuery.addListener(handleViewportChange);
+    }
+    handleViewportChange();
 });
