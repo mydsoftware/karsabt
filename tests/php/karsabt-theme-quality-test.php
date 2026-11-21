@@ -54,6 +54,9 @@ karsabt_test('پشتیبانی Escape در منوی موبایل', strpos($js, "
 karsabt_test('پشتیبانی کاهش حرکت', strpos($css, 'prefers-reduced-motion: reduce') !== false);
 karsabt_test('نشانگر تمرکز صفحه‌کلید', strpos($css, 'focus-visible') !== false);
 karsabt_test('داده ساختاریافته Service', strpos($functions, "'@type' => 'Service'") !== false);
+karsabt_test('محافظت JSON-LD در برابر شکستن تگ script', strpos($functions, 'JSON_HEX_TAG') !== false && strpos($functions, 'JSON_HEX_AMP') !== false && strpos($functions, 'JSON_HEX_APOS') !== false && strpos($functions, 'JSON_HEX_QUOT') !== false);
+karsabt_test('تشخیص صحیح Rank Math', strpos($functions, "class_exists('\\\\RankMath\\\\Helper')") !== false);
+karsabt_test('نادیده‌گرفتن revision هنگام ذخیره FAQ', strpos($functions, 'wp_is_post_revision($post_id)') !== false);
 karsabt_test('نمایش مسیر راهنما در برگه و نوشته', strpos($functions, "is_singular(array('page', 'post'))") !== false);
 karsabt_test('مستندات تنظیمات سفارشی‌ساز', is_file($theme . '/docs/CUSTOMIZER-FA.md') && strpos($readme, 'سفارشی‌سازی') !== false);
 karsabt_test('عدم نمایش اطلاعات تماس خالی در سربرگ', strpos($header, 'if ($contact_location || $contact_email || $contact_phone)') !== false);
