@@ -67,7 +67,7 @@ karsabt_test('کنترل نمایش نوار تماس از سفارشی‌ساز
 karsabt_test('کنترل نمایش دکمه سربرگ', strpos($header, "karsabt_show_header_cta") !== false);
 karsabt_test('کنترل نمایش دکمه موبایل', strpos($footer, "karsabt_show_mobile_cta") !== false);
 karsabt_test('تنظیم متن حقوق پابرگ', strpos($footer, "karsabt_footer_copyright") !== false);
-karsabt_test('تنظیم رنگ‌های برند با اعتبارسنجی رنگ', strpos($functions, "sanitize_hex_color") !== false && strpos($functions, "wp_add_inline_style") !== false);
+karsabt_test('تنظیم رنگ‌های برند با اعتبارسنجی رنگ', strpos($functions, "sanitize_hex_color") !== false && strpos($functions, "wp_add_inline_style") !== false && strpos($functions, "--ks-color-primary:") !== false && strpos($functions, "--ks-color-navy:") !== false);
 karsabt_test('عدم نمایش اطلاعات تماس خالی در سربرگ', strpos($header, '$contact_location || $contact_email || $contact_phone') !== false);
 
 
