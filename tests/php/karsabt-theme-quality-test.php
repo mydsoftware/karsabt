@@ -58,6 +58,7 @@ karsabt_test('پشتیبانی Escape در منوی موبایل', strpos($js, "
 karsabt_test('پشتیبانی کاهش حرکت', strpos($css, 'prefers-reduced-motion: reduce') !== false);
 karsabt_test('نشانگر تمرکز صفحه‌کلید', strpos($css, 'focus-visible') !== false);
 karsabt_test('داده ساختاریافته Service', strpos($functions, "'@type' => 'Service'") !== false);
+karsabt_test('داده ساختاریافته WebSite و WebPage', strpos($functions, "'@type' => 'WebSite'") !== false && strpos($functions, "'@type' => 'WebPage'") !== false);
 karsabt_test('محافظت JSON-LD در برابر شکستن تگ script', strpos($functions, 'JSON_HEX_TAG') !== false && strpos($functions, 'JSON_HEX_AMP') !== false && strpos($functions, 'JSON_HEX_APOS') !== false && strpos($functions, 'JSON_HEX_QUOT') !== false);
 karsabt_test('تشخیص صحیح Rank Math', strpos($functions, "class_exists('\\RankMath\\\\Helper')") !== false);
 karsabt_test('نادیده‌گرفتن revision هنگام ذخیره FAQ', strpos($functions, 'wp_is_post_revision($post_id)') !== false);
@@ -100,7 +101,8 @@ karsabt_test('بسته‌سازی قالب بدون پوشه گیت و تست', 
 
 karsabt_test('لینک خدمات از کلیدهای معتبر فرم سفارش استفاده می‌کند', strpos($services_template, "'company'") !== false && strpos($services_template, "'trademark'") !== false && strpos($services_template, "'home_business'") !== false && strpos($services_template, "'business'") !== false);
 karsabt_test('پیش‌انتخاب خدمت از پارامتر URL', strpos($theme_js, 'URLSearchParams(window.location.search)') !== false && strpos($theme_js, 'serviceSelect.value = serviceParam') !== false);
-karsabt_test('صفحه جزئیات خدمت از کلید فرم استفاده می‌کند', strpos($detail_template, '$karsabt_service_key') !== false && strpos($detail_template, "add_query_arg('service'") !== false);
+karsabt_test('صفحه جزئیات خدمت از کلید استاندارد فرم استفاده می‌کند', strpos($detail_template, '$karsabt_service_key') !== false && strpos($detail_template, "'ثبت شرکت' => 'company'") !== false && strpos($detail_template, "add_query_arg('service', $karsabt_service_key") !== false);
+karsabt_test('لینک داخلی دایرکتوری به صفحه جزئیات منتشرشده', strpos($services_template, 'get_page_by_path') !== false && strpos($services_template, 'مشاهده جزئیات') !== false);
 
 $failed = array();
 foreach ($checks as $check) {
