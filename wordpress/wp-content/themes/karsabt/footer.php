@@ -1,6 +1,7 @@
+<?php $karsabt_cta_url = get_theme_mod('karsabt_cta_url', home_url('/#contact')); $karsabt_cta_label = get_theme_mod('karsabt_cta_label', 'ثبت سفارش آنلاین'); ?>
 <?php if (!function_exists('elementor_theme_do_location') || !elementor_theme_do_location('footer')) : ?>
 <footer class="site-footer"><div class="container"><div class="footer-grid">
-<div><h3>کارثبت | Karsabt.ir</h3><p>سامانه خدمات ثبتی و اداری؛ همراه شما برای انجام امور کسب‌وکار.</p></div>
+<div><h3>کارثبت | Karsabt.ir</h3><p><?php echo esc_html(get_theme_mod('karsabt_footer_description', 'سامانه خدمات ثبتی و اداری؛ همراه شما برای انجام امور کسب‌وکار.')); ?></p></div>
 <div><h3>دسترسی سریع</h3>
 <?php
 wp_nav_menu(array(
@@ -31,5 +32,5 @@ if ($contact_location || $contact_email || $contact_phone) :
 <?php endif; ?>
 </div><div class="footer-bottom">© <?php echo esc_html(date_i18n('Y')); ?> کارثبت. تمامی حقوق محفوظ است.</div></div></footer>
 <?php endif; ?>
-<div class="mobile-cta"><a class="btn" href="<?php echo esc_url(home_url('/#contact')); ?>">ثبت سفارش آنلاین</a></div>
+<div class="mobile-cta"><a class="btn" href="<?php echo esc_url($karsabt_cta_url); ?>"><?php echo esc_html($karsabt_cta_label); ?></a></div>
 <?php wp_footer(); ?></body></html>
