@@ -139,16 +139,16 @@ function karsabt_messages_admin_page() {
                     'time' => current_time('mysql'),
                 );
                 $saved = update_post_meta($order_id, '_karsabt_messages', $messages);
-                $mobile = get_post_meta($order_id, '_karsabt_customer_phone', true);
-                $tracking = get_post_meta($order_id, '_karsabt_tracking_code', true);
-                if (function_exists('karsabt_notify_sms')) {
-                    karsabt_notify_sms($mobile, 'پاسخ جدیدی برای درخواست ' . $tracking . ' در پنل کارثبت ثبت شد.', 'admin_replied', array('order_id' => $order_id));
-                }
                 $notice = false === $saved ? '<div class="notice notice-error"><p>ذخیره پاسخ انجام نشد.</p></div>' : '<div class="notice notice-success"><p>پاسخ ثبت شد.</p></div>';
                 } else {
                     $notice = '<div class="notice notice-error"><p>ظرفیت گفت‌وگو تکمیل شده است.</p></div>';
                 }
                 karsabt_messages_unlock($lock_name);
+                if (false !== $saved && function_exists('karsabt_notify_sms')) {
+                    $mobile = get_post_meta($order_id, '_karsabt_customer_phone', true);
+                    $tracking = get_post_meta($order_id, '_karsabt_tracking_code', true);
+                    karsabt_notify_sms($mobile, 'پاسخ جدیدی برای درخواست ' . $tracking . ' در پنل کارثبت ثبت شد.', 'admin_replied', array('order_id' => $order_id));
+                }
             }
         } else {
             $notice = '<div class="notice notice-error"><p>درخواست یا متن پیام معتبر نیست.</p></div>';
