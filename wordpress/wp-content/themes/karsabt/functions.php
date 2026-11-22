@@ -159,3 +159,101 @@ function karsabt_order_submit() {
 }
 add_action('admin_post_nopriv_karsabt_order_submit','karsabt_order_submit');
 add_action('admin_post_karsabt_order_submit','karsabt_order_submit');
+
+
+/** گردش وضعیت سفارش‌ها */
+function karsabt_order_workflow_statuses() {
+    $statuses = array(
+        'karsabt_new' => 'جدید',
+        'karsabt_processing' => 'در حال انجام',
+        'karsabt_completed' => 'تکمیل شده',
+        'karsabt_cancelled' => 'لغو شده',
+    );
+    foreach ($statuses as $key => $label) {
+        register_post_status($key, array(
+            'label' => $label,
+            'public' => false,
+            'exclude_from_search' => true,
+            'show_in_admin_all_list' => true,
+            'show_in_admin_status_list' => true,
+            'label_count' => _n_noop($label . ' <span class="count">(%s)</span>', $label . ' <span class="count">(%s)</span>')
+        ));
+    }
+}
+add_action('init', 'karsabt_order_workflow_statuses', 1);
+
+/** انتخاب وضعیت در صفحه ویرایش سفارش */
+function karsabt_order_status_box() {
+    add_meta_box('karsabt_order_status', 'وضعیت سفارش', 'karsabt_order_status_render', 'karsabt_order', 'side', 'high');
+}
+add_action('add_meta_boxes_karsabt_order', 'karsabt_order_status_box');
+function karsabt_order_status_render($post) {
+    wp_nonce_field('karsabt_order_status_save', 'karsabt_order_status_nonce');
+    $current = get_post_status($post->ID);
+    $statuses = array('karsabt_new'=>'جدید','karsabt_processing'=>'در حال انجام','karsabt_completed'=>'تکمیل شده','karsabt_cancelled'=>'لغو شده');
+    echo '<label for="karsabt_order_status_select">انتخاب وضعیت</label><select name="karsabt_order_status_select" id="karsabt_order_status_select" style="width:100%;margin-top:8px">';
+    foreach($statuses as $key=>$label) echo '<option value="'.esc_attr($key).'" '.selected($current,$key,false).'>'.esc_html($label).'</option>';
+    echo '</select>';
+}
+function karsabt_order_status_save($post_id) {
+    if(!isset($_POST['karsabt_order_status_nonce'])||!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['karsabt_order_status_nonce'])),'karsabt_order_status_save')) return;
+    if(defined('DOING_AUTOSAVE')&&DOING_AUTOSAVE) return;
+    if(wp_is_post_revision($post_id)||wp_is_post_autosave($post_id)) return;
+    if(!current_user_can('edit_post',$post_id)) return;
+    $status=isset($_POST['karsabt_order_status_select'])?sanitize_key(wp_unslash($_POST['karsabt_order_status_select'])):'';
+    $allowed=array('karsabt_new','karsabt_processing','karsabt_completed','karsabt_cancelled');
+    if(in_array($status,$allowed,true)&&get_post_status($post_id)!==$status) {
+        remove_action('save_post_karsabt_order','karsabt_order_status_save');
+        wp_update_post(array('ID'=>$post_id,'post_status'=>$status));
+        add_action('save_post_karsabt_order','karsabt_order_status_save');
+    }
+}
+add_action('save_post_karsabt_order','karsabt_order_status_save');
+
+/** ستون‌های اختصاصی سفارش‌ها */
+function karsabt_order_admin_columns($columns) {
+    $new=array();
+    $new['cb']=isset($columns['cb'])?$columns['cb']:'<input type="checkbox" />';
+    $new['title']='سفارش';
+    $new['karsabt_code']='کد سفارش';
+    $new['karsabt_customer']='مشتری';
+    $new['karsabt_phone']='شماره تماس';
+    $new['karsabt_service']='خدمت';
+    $new['karsabt_status']='وضعیت';
+    $new['date']='تاریخ ثبت';
+    return $new;
+}
+add_filter('manage_karsabt_order_posts_columns','karsabt_order_admin_columns');
+function karsabt_order_admin_column_content($column,$post_id) {
+    switch($column) {
+        case 'karsabt_code': echo esc_html(get_post_meta($post_id,'_karsabt_order_code',true)); break;
+        case 'karsabt_customer': echo esc_html(get_post_meta($post_id,'_karsabt_customer_name',true)); break;
+        case 'karsabt_phone': echo esc_html(get_post_meta($post_id,'_karsabt_customer_phone',true)); break;
+        case 'karsabt_service': echo esc_html(get_post_meta($post_id,'_karsabt_order_service',true)); break;
+        case 'karsabt_status':
+            $map=array('karsabt_new'=>'جدید','karsabt_processing'=>'در حال انجام','karsabt_completed'=>'تکمیل شده','karsabt_cancelled'=>'لغو شده');
+            echo isset($map[get_post_status($post_id)])?esc_html($map[get_post_status($post_id)]):esc_html(get_post_status($post_id)); break;
+    }
+}
+add_action('manage_karsabt_order_posts_custom_column','karsabt_order_admin_column_content',10,2);
+
+/** فیلتر وضعیت در فهرست سفارش‌ها */
+function karsabt_order_status_filter_dropdown() {
+    global $typenow;
+    if($typenow!=='karsabt_order') return;
+    $selected=isset($_GET['karsabt_status_filter'])?sanitize_key(wp_unslash($_GET['karsabt_status_filter'])):'';
+    $statuses=array('karsabt_new'=>'جدید','karsabt_processing'=>'در حال انجام','karsabt_completed'=>'تکمیل شده','karsabt_cancelled'=>'لغو شده');
+    echo '<select name="karsabt_status_filter"><option value="">همه وضعیت‌ها</option>';
+    foreach($statuses as $key=>$label) echo '<option value="'.esc_attr($key).'" '.selected($selected,$key,false).'>'.esc_html($label).'</option>';
+    echo '</select>';
+}
+add_action('restrict_manage_posts','karsabt_order_status_filter_dropdown');
+function karsabt_order_status_filter_query($query) {
+    if(!is_admin()||!$query->is_main_query()) return;
+    if($query->get('post_type')!=='karsabt_order') return;
+    if(isset($_GET['karsabt_status_filter'])) {
+        $status=sanitize_key(wp_unslash($_GET['karsabt_status_filter']));
+        if(in_array($status,array('karsabt_new','karsabt_processing','karsabt_completed','karsabt_cancelled'),true)) $query->set('post_status',$status);
+    }
+}
+add_action('pre_get_posts','karsabt_order_status_filter_query');
