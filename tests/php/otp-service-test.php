@@ -5,6 +5,7 @@
  */
 define('ABSPATH', __DIR__);
 define('HOUR_IN_SECONDS', 3600);
+define('MINUTE_IN_SECONDS', 60);
 
 $GLOBALS['karsabt_test_transients'] = array();
 $GLOBALS['karsabt_test_otp_code'] = '';
