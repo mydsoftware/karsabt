@@ -19,10 +19,25 @@ final class Karsabt_OTP_Service {
         return 'karsabt_otp_' . $prefix . '_' . self::mobile_key($mobile);
     }
 
+    /** محدودسازی مستقل بر اساس IP برای جلوگیری از SMS pumping و brute force چندشماره‌ای. */
+    private static function ip_rate_limited($action, $limit, $ttl) {
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
+        $key = 'karsabt_otp_ip_' . sanitize_key($action) . '_' . hash('sha256', $ip);
+        $count = (int) get_transient($key);
+        if ($count >= $limit) {
+            return true;
+        }
+        set_transient($key, $count + 1, $ttl);
+        return false;
+    }
+
     /** @return true|WP_Error */
     public static function send($mobile) {
         $mobile = function_exists('karsabt_core_normalize_mobile') ? karsabt_core_normalize_mobile($mobile) : '';
         if (!$mobile) { return new WP_Error('invalid_mobile', 'شماره موبایل معتبر نیست.'); }
+        if (self::ip_rate_limited('send', 10, HOUR_IN_SECONDS)) {
+            return new WP_Error('otp_ip_rate_limited', 'تعداد درخواست‌ها بیش از حد مجاز است. بعداً دوباره تلاش کنید.');
+        }
 
         $cooldown_key = self::transient_key('cooldown', $mobile);
         $hour_key = self::transient_key('hour', $mobile);
@@ -67,6 +82,9 @@ final class Karsabt_OTP_Service {
         $code = preg_replace('/[^0-9]/', '', $code);
         if (!$mobile || !preg_match('/^[0-9]{6}$/', $code)) {
             return new WP_Error('invalid_otp', 'کد تأیید معتبر نیست یا منقضی شده است.');
+        }
+        if (self::ip_rate_limited('verify', 30, 15 * MINUTE_IN_SECONDS)) {
+            return new WP_Error('otp_ip_rate_limited', 'تعداد تلاش‌ها بیش از حد مجاز است. بعداً دوباره تلاش کنید.');
         }
 
         $transient_key = self::transient_key('code', $mobile);
