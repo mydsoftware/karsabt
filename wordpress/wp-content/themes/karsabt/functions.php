@@ -81,21 +81,34 @@ function karsabt_register_service_post_type() {
 }
 add_action('init', 'karsabt_register_service_post_type');
 
-/** فیلد نماد خدمت */
-function karsabt_service_icon_meta_box() {
-    add_meta_box('karsabt_service_icon', 'نماد خدمت', 'karsabt_service_icon_render', 'karsabt_service', 'side', 'default');
+/** فیلدهای نماد و قیمت‌گذاری خدمات */
+function karsabt_service_meta_boxes() {
+    add_meta_box('karsabt_service_details', 'مشخصات و قیمت خدمت', 'karsabt_service_details_render', 'karsabt_service', 'side', 'default');
 }
-add_action('add_meta_boxes', 'karsabt_service_icon_meta_box');
-function karsabt_service_icon_render($post) {
-    wp_nonce_field('karsabt_service_icon_save', 'karsabt_service_icon_nonce');
+add_action('add_meta_boxes', 'karsabt_service_meta_boxes');
+function karsabt_service_details_render($post) {
+    wp_nonce_field('karsabt_service_meta_save', 'karsabt_service_meta_nonce');
     $icon = get_post_meta($post->ID, '_karsabt_service_icon', true);
-    echo '<label for="karsabt_service_icon_field">ایموجی یا نماد کوتاه (مثلاً 🏢)</label>';
-    echo '<input id="karsabt_service_icon_field" name="karsabt_service_icon_field" type="text" maxlength="12" style="width:100%;margin-top:8px" value="' . esc_attr($icon) . '">';
+    $price = get_post_meta($post->ID, '_karsabt_service_price', true);
+    $discount = get_post_meta($post->ID, '_karsabt_service_discount', true);
+    $featured = get_post_meta($post->ID, '_karsabt_service_featured', true);
+    $popular = get_post_meta($post->ID, '_karsabt_service_popular', true);
+    echo '<p><label for="karsabt_service_icon_field">نماد / ایموجی</label><input id="karsabt_service_icon_field" name="karsabt_service_icon_field" type="text" maxlength="12" style="width:100%" value="' . esc_attr($icon) . '"></p>';
+    echo '<p><label for="karsabt_service_price">قیمت پایه (تومان)</label><input id="karsabt_service_price" name="karsabt_service_price" type="number" min="0" step="1000" style="width:100%" value="' . esc_attr($price) . '"></p>';
+    echo '<p><label for="karsabt_service_discount">قیمت با تخفیف (تومان)</label><input id="karsabt_service_discount" name="karsabt_service_discount" type="number" min="0" step="1000" style="width:100%" value="' . esc_attr($discount) . '"></p>';
+    echo '<p><label><input type="checkbox" name="karsabt_service_featured" value="1" ' . checked($featured, '1', false) . '> خدمت ویژه</label></p>';
+    echo '<p><label><input type="checkbox" name="karsabt_service_popular" value="1" ' . checked($popular, '1', false) . '> خدمت پرفروش</label></p>';
 }
-function karsabt_service_icon_save($post_id) {
-    if (!isset($_POST['karsabt_service_icon_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['karsabt_service_icon_nonce'])), 'karsabt_service_icon_save')) return;
+function karsabt_service_meta_save($post_id) {
+    if (!isset($_POST['karsabt_service_meta_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['karsabt_service_meta_nonce'])), 'karsabt_service_meta_save')) return;
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) return;
     if (!current_user_can('edit_post', $post_id)) return;
     if (isset($_POST['karsabt_service_icon_field'])) update_post_meta($post_id, '_karsabt_service_icon', sanitize_text_field(wp_unslash($_POST['karsabt_service_icon_field'])));
+    foreach (array('karsabt_service_price'=>'_karsabt_service_price','karsabt_service_discount'=>'_karsabt_service_discount') as $field=>$meta) {
+        if (isset($_POST[$field])) update_post_meta($post_id, $meta, absint(wp_unslash($_POST[$field])));
+    }
+    update_post_meta($post_id, '_karsabt_service_featured', isset($_POST['karsabt_service_featured']) ? '1' : '0');
+    update_post_meta($post_id, '_karsabt_service_popular', isset($_POST['karsabt_service_popular']) ? '1' : '0');
 }
-add_action('save_post_karsabt_service', 'karsabt_service_icon_save');
+add_action('save_post_karsabt_service', 'karsabt_service_meta_save');
