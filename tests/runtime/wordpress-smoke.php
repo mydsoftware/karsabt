@@ -11,6 +11,7 @@ if (!$wpPath || !is_file($wpPath . '/wp-load.php')) {
     exit(1);
 }
 require $wpPath . '/wp-load.php';
+require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 $checks = array();
 $failures = array();
