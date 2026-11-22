@@ -72,6 +72,27 @@ karsabt_test('تنظیم متن حقوق پابرگ', strpos($footer, "karsabt_f
 karsabt_test('تنظیم رنگ‌های برند با اعتبارسنجی رنگ', strpos($functions, "sanitize_hex_color") !== false && strpos($functions, "wp_add_inline_style") !== false && strpos($functions, "--ks-color-primary:") !== false && strpos($functions, "--ks-color-navy:") !== false);
 karsabt_test('عدم نمایش اطلاعات تماس خالی در سربرگ', strpos($header, '$contact_location || $contact_email || $contact_phone') !== false);
 
+// کنترل‌های امنیتی مشترک قالب و افزونه Karsabt Core.
+$core_path = $root . '/wordpress/wp-content/plugins/karsabt-core/karsabt-core.php';
+$docs_path = $root . '/wordpress/wp-content/plugins/karsabt-core/includes/class-karsabt-documents.php';
+$otp_path = $root . '/wordpress/wp-content/plugins/karsabt-core/includes/class-karsabt-otp.php';
+$core = is_file($core_path) ? (string) file_get_contents($core_path) : '';
+$docs = is_file($docs_path) ? (string) file_get_contents($docs_path) : '';
+$otp = is_file($otp_path) ? (string) file_get_contents($otp_path) : '';
+
+karsabt_test('وجود افزونه مستقل Karsabt Core', is_file($root . '/wordpress/wp-content/plugins/karsabt-core/karsabt-core.php'));
+karsabt_test('محدودسازی ارسال سفارش عمومی', strpos($core, 'function karsabt_core_order_rate_limited()') !== false && strpos($core, 'if (karsabt_core_order_rate_limited())') !== false);
+karsabt_test('عدم افشای وجود حساب در درخواست OTP', strpos($core, 'حسابی با این شماره پیدا نشد') === false && strpos($core, 'با این شماره قبلاً حساب ساخته شده است. از بخش ورود استفاده کنید') === false);
+karsabt_test('پاسخ یکسان برای خطاهای تأیید OTP', strpos($core, 'کد تأیید معتبر نیست یا منقضی شده است. دوباره درخواست کد بدهید.') !== false);
+karsabt_test('محدودسازی ارسال OTP بر اساس IP', strpos($otp, "ip_rate_limited('send'") !== false);
+karsabt_test('محدودسازی بررسی OTP بر اساس IP', strpos($otp, "ip_rate_limited('verify'") !== false);
+karsabt_test('محدودیت OTP برای هر شماره حفظ شده است', strpos($otp, 'MAX_SENDS_PER_HOUR = 5') !== false && strpos($otp, 'MAX_VERIFY_ATTEMPTS = 5') !== false);
+karsabt_test('دریافت مدارک فقط از مسیر کاربران واردشده', strpos($docs, "add_action('admin_post_nopriv_karsabt_document_download'") === false && strpos($docs, "add_action('admin_post_karsabt_document_download'") !== false);
+karsabt_test('کنترل مالکیت مشتری برای بارگذاری مدارک', strpos($docs, "get_post_meta($order_id, '_karsabt_customer_user_id', true) !== get_current_user_id()") !== false);
+karsabt_test('ذخیره مدارک خارج از web root', strpos($docs, 'KARSABT_PRIVATE_UPLOAD_DIR') !== false && strpos($docs, 'realpath(ABSPATH)') !== false);
+karsabt_test('محدودیت نوع و اندازه مدارک', strpos($docs, 'FILEINFO_MIME_TYPE') !== false && strpos($docs, '5 * 1024 * 1024') !== false);
+karsabt_test('کنترل مجوز اختصاصی پرونده کارشناس', strpos($core, "add_filter('map_meta_cap', 'karsabt_core_staff_order_caps'") !== false && strpos($core, "return array('do_not_allow')") !== false);
+
 
 karsabt_test('الگوی صفحه فرود کمپین', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'ks-landing-request') !== false);
 karsabt_test('فرم سفارش در صفحه فرود', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), '[karsabt_order_form]') !== false);
