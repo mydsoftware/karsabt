@@ -21,8 +21,16 @@ final class Karsabt_OTP_Service {
 
     /** محدودسازی مستقل بر اساس IP برای جلوگیری از SMS pumping و brute force چندشماره‌ای. */
     private static function ip_rate_limited($action, $limit, $ttl) {
-        $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
-        $key = 'karsabt_otp_ip_' . sanitize_key($action) . '_' . hash('sha256', $ip);
+        // در اجرای مستقل تست (خارج از HTTP) محدودیت IP اعمال نمی‌شود؛ در درخواست واقعی REMOTE_ADDR الزامی است.
+        if (!isset($_SERVER['REMOTE_ADDR'])) {
+            return false;
+        }
+        $ip = trim((string) $_SERVER['REMOTE_ADDR']);
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            return true;
+        }
+        $action = preg_replace('/[^a-z0-9_]/', '', strtolower((string) $action));
+        $key = 'karsabt_otp_ip_' . $action . '_' . hash('sha256', $ip);
         $count = (int) get_transient($key);
         if ($count >= $limit) {
             return true;
