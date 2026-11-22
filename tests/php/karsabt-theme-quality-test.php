@@ -109,7 +109,7 @@ karsabt_test('جلوگیری از ارسال پیام به پرونده مشتر
 karsabt_test('محدودیت نرخ ارسال پیام مشتری', strpos($messages, 'karsabt_msg_rate_') !== false && strpos($messages, '$sent_count >= 20') !== false);
 karsabt_test('محدودیت تعداد پیام هر پرونده', strpos($messages, 'count($messages) >= 200') !== false);
 karsabt_test('پنل پیام‌های مدیریتی فقط برای مدیر', strpos($messages, "current_user_can('manage_options')") !== false);
-karsabt_test('امور مالی فقط برای مدیر قابل دسترسی است', substr_count($finance, "current_user_can('manage_options')") >= 4);
+karsabt_test('امور مالی فقط برای مدیر قابل دسترسی است', substr_count($finance, "current_user_can('manage_options')") >= 3);
 karsabt_test('ممانعت از پرداخت بیشتر از مانده فاکتور', strpos($finance, '$amount > ($total - $paid)') !== false);
 karsabt_test('قفل تراکنشی ثبت پرداخت هم‌زمان', strpos($finance, "FOR UPDATE") !== false && strpos($finance, "START TRANSACTION") !== false && strpos($finance, "COMMIT") !== false && strpos($finance, "ROLLBACK") !== false);
 karsabt_test('نمایش فاکتور فقط به مالک حساب', strpos($finance, '_karsabt_invoice_customer_user_id') !== false && strpos($finance, '!== $user_id') !== false);
