@@ -55,3 +55,47 @@ add_action('customize_register', 'karsabt_customize_register');
 
 add_filter('excerpt_length', function($length) { return 24; });
 add_filter('excerpt_more', function($more) { return '…'; });
+
+/** ثبت نوع محتوای خدمات برای مدیریت از پیشخوان */
+function karsabt_register_service_post_type() {
+    register_post_type('karsabt_service', array(
+        'labels' => array(
+            'name' => 'خدمات کارثبت',
+            'singular_name' => 'خدمت',
+            'add_new' => 'افزودن خدمت',
+            'add_new_item' => 'افزودن خدمت جدید',
+            'edit_item' => 'ویرایش خدمت',
+            'new_item' => 'خدمت جدید',
+            'view_item' => 'مشاهده خدمت',
+            'search_items' => 'جستجوی خدمات',
+            'not_found' => 'خدمتی یافت نشد',
+            'menu_name' => 'خدمات'
+        ),
+        'public' => true,
+        'show_in_rest' => true,
+        'has_archive' => true,
+        'rewrite' => array('slug' => 'services'),
+        'menu_icon' => 'dashicons-portfolio',
+        'supports' => array('title','editor','excerpt','thumbnail','page-attributes'),
+    ));
+}
+add_action('init', 'karsabt_register_service_post_type');
+
+/** فیلد نماد خدمت */
+function karsabt_service_icon_meta_box() {
+    add_meta_box('karsabt_service_icon', 'نماد خدمت', 'karsabt_service_icon_render', 'karsabt_service', 'side', 'default');
+}
+add_action('add_meta_boxes', 'karsabt_service_icon_meta_box');
+function karsabt_service_icon_render($post) {
+    wp_nonce_field('karsabt_service_icon_save', 'karsabt_service_icon_nonce');
+    $icon = get_post_meta($post->ID, '_karsabt_service_icon', true);
+    echo '<label for="karsabt_service_icon_field">ایموجی یا نماد کوتاه (مثلاً 🏢)</label>';
+    echo '<input id="karsabt_service_icon_field" name="karsabt_service_icon_field" type="text" maxlength="12" style="width:100%;margin-top:8px" value="' . esc_attr($icon) . '">';
+}
+function karsabt_service_icon_save($post_id) {
+    if (!isset($_POST['karsabt_service_icon_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['karsabt_service_icon_nonce'])), 'karsabt_service_icon_save')) return;
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (!current_user_can('edit_post', $post_id)) return;
+    if (isset($_POST['karsabt_service_icon_field'])) update_post_meta($post_id, '_karsabt_service_icon', sanitize_text_field(wp_unslash($_POST['karsabt_service_icon_field'])));
+}
+add_action('save_post_karsabt_service', 'karsabt_service_icon_save');
