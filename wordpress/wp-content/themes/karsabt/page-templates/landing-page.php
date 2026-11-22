@@ -76,7 +76,7 @@ get_header();
 <?php
 $ks_graph = array('@context' => 'https://schema.org', '@graph' => array(
 array('@type' => 'Service', '@id' => get_permalink($ks_post_id) . '#company-registration-service', 'name' => 'خدمات ثبت شرکت', 'serviceType' => 'ثبت شرکت در ایران', 'url' => get_permalink($ks_post_id), 'description' => wp_strip_all_tags($ks_description), 'provider' => array('@id' => home_url('/#organization')), 'areaServed' => array('@type' => 'Country', 'name' => 'ایران'), 'availableLanguage' => 'Persian'),
-);
+));
 $ks_entities = array();
 foreach ($ks_faq_items as $ks_faq) { if (empty($ks_faq['question']) || empty($ks_faq['answer'])) { continue; } $ks_entities[] = array('@type' => 'Question', 'name' => wp_strip_all_tags($ks_faq['question']), 'acceptedAnswer' => array('@type' => 'Answer', 'text' => wp_strip_all_tags($ks_faq['answer']))); }
 if ($ks_entities) { $ks_graph['@graph'][] = array('@type' => 'FAQPage', '@id' => get_permalink($ks_post_id) . '#faq', 'mainEntity' => $ks_entities); }
