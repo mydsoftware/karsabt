@@ -104,15 +104,15 @@ $customer_order = is_file($customer_order_path) ? (string) file_get_contents($cu
 $messages = is_file($messages_path) ? (string) file_get_contents($messages_path) : '';
 $finance = is_file($finance_path) ? (string) file_get_contents($finance_path) : '';
 
-karsabt_test('جلوگیری از مشاهده پرونده مشتری دیگر', strpos($customer_order, "_karsabt_customer_user_id") !== false && strpos($customer_order, "!== $user_id") !== false);
-karsabt_test('جلوگیری از ارسال پیام به پرونده مشتری دیگر', strpos($messages, "!== get_current_user_id()") !== false);
-karsabt_test('محدودیت نرخ ارسال پیام مشتری', strpos($messages, "karsabt_msg_rate_") !== false && strpos($messages, "$sent_count >= 20") !== false);
-karsabt_test('محدودیت تعداد پیام هر پرونده', strpos($messages, "count($messages) >= 200") !== false);
+karsabt_test('جلوگیری از مشاهده پرونده مشتری دیگر', strpos($customer_order, '_karsabt_customer_user_id') !== false && strpos($customer_order, '!== $user_id') !== false);
+karsabt_test('جلوگیری از ارسال پیام به پرونده مشتری دیگر', strpos($messages, '!== get_current_user_id()') !== false);
+karsabt_test('محدودیت نرخ ارسال پیام مشتری', strpos($messages, 'karsabt_msg_rate_') !== false && strpos($messages, '$sent_count >= 20') !== false);
+karsabt_test('محدودیت تعداد پیام هر پرونده', strpos($messages, 'count($messages) >= 200') !== false);
 karsabt_test('پنل پیام‌های مدیریتی فقط برای مدیر', strpos($messages, "current_user_can('manage_options')") !== false);
 karsabt_test('امور مالی فقط برای مدیر قابل دسترسی است', substr_count($finance, "current_user_can('manage_options')") >= 4);
-karsabt_test('ممانعت از پرداخت بیشتر از مانده فاکتور', strpos($finance, "$amount > ($total - $paid)") !== false);
+karsabt_test('ممانعت از پرداخت بیشتر از مانده فاکتور', strpos($finance, '$amount > ($total - $paid)') !== false);
 karsabt_test('قفل تراکنشی ثبت پرداخت هم‌زمان', strpos($finance, "FOR UPDATE") !== false && strpos($finance, "START TRANSACTION") !== false && strpos($finance, "COMMIT") !== false && strpos($finance, "ROLLBACK") !== false);
-karsabt_test('نمایش فاکتور فقط به مالک حساب', strpos($finance, "_karsabt_invoice_customer_user_id") !== false && strpos($finance, "!== $user_id") !== false);
+karsabt_test('نمایش فاکتور فقط به مالک حساب', strpos($finance, '_karsabt_invoice_customer_user_id') !== false && strpos($finance, '!== $user_id') !== false);
 
 
 
