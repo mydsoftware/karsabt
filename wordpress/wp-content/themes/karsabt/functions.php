@@ -279,6 +279,22 @@ function karsabt_register_customer_post_type() {
 }
 add_action('init','karsabt_register_customer_post_type');
 
+/** دسترسی پرونده‌های محرمانه فقط برای مدیران سایت */
+function karsabt_grant_private_record_caps() {
+    $role = get_role('administrator');
+    if (!$role) return;
+    $caps = array(
+        'edit_karsabt_orders','edit_others_karsabt_orders','publish_karsabt_orders','read_private_karsabt_orders',
+        'delete_karsabt_orders','delete_private_karsabt_orders','delete_published_karsabt_orders','delete_others_karsabt_orders',
+        'edit_private_karsabt_orders','edit_published_karsabt_orders','edit_karsabt_order','read_karsabt_order','delete_karsabt_order',
+        'edit_karsabt_customers','edit_others_karsabt_customers','publish_karsabt_customers','read_private_karsabt_customers',
+        'delete_karsabt_customers','delete_private_karsabt_customers','delete_published_karsabt_customers','delete_others_karsabt_customers',
+        'edit_private_karsabt_customers','edit_published_karsabt_customers','edit_karsabt_customer','read_karsabt_customer','delete_karsabt_customer'
+    );
+    foreach ($caps as $cap) $role->add_cap($cap);
+}
+add_action('admin_init','karsabt_grant_private_record_caps');
+
 /** شماره تماس را برای تطبیق به شکل یکسان تبدیل می‌کند */
 function karsabt_normalize_phone($phone) {
     $phone = strtr((string) $phone, array('۰'=>'0','۱'=>'1','۲'=>'2','۳'=>'3','۴'=>'4','۵'=>'5','۶'=>'6','۷'=>'7','۸'=>'8','۹'=>'9','٠'=>'0','١'=>'1','٢'=>'2','٣'=>'3','٤'=>'4','٥'=>'5','٦'=>'6','٧'=>'7','٨'=>'8','٩'=>'9'));
