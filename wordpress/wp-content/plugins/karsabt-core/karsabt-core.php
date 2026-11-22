@@ -447,7 +447,8 @@ function karsabt_core_customer_auth() {
                 } else {
                     $sent = Karsabt_OTP_Service::send($mobile);
                     if (is_wp_error($sent)) {
-                        $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">' . esc_html($sent->get_error_message()) . '</p>';
+                        // خطاهای درگاه، محدودیت ارسال و وضعیت حساب نباید تفاوت قابل تشخیص ایجاد کنند.
+                        $notice = '<p class="karsabt-form-notice karsabt-form-success" role="status">اگر شماره واردشده برای این روش واجد شرایط باشد، کد تأیید ارسال می‌شود. در غیر این صورت راهنمایی لازم نمایش داده خواهد شد.</p>';
                     } else {
                         $notice = '<p class="karsabt-form-notice karsabt-form-success" role="status">درخواست ارسال کد ثبت شد. اگر پیامک را دریافت کردید، کد را در فرم تأیید وارد کنید.</p>';
                     }
@@ -456,7 +457,8 @@ function karsabt_core_customer_auth() {
                 $code = isset($_POST['customer_otp']) ? sanitize_text_field(wp_unslash($_POST['customer_otp'])) : '';
                 $verified = Karsabt_OTP_Service::verify($mobile, $code);
                 if (is_wp_error($verified)) {
-                    $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">' . esc_html($verified->get_error_message()) . '</p>';
+                    // خطای کد نامعتبر، منقضی یا تمام‌شدن تلاش‌ها پاسخ یکسان دارد.
+                    $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">کد تأیید معتبر نیست یا منقضی شده است. دوباره درخواست کد بدهید.</p>';
                 } elseif ('verify_login' === $mode) {
                     $users = get_users(array('meta_key' => '_karsabt_mobile', 'meta_value' => $mobile, 'number' => 1));
                     $user = $users ? $users[0] : false;
