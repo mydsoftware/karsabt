@@ -86,3 +86,8 @@ jobs:
         env:
           KARSABT_WP_PATH: ${{ runner.temp }}/wordpress
         run: php tests/runtime/wordpress-smoke.php
+
+      - name: آزمون هم‌زمانی تراکنش‌ها و قفل‌های دیتابیس
+        env:
+          KARSABT_WP_PATH: ${{ runner.temp }}/wordpress
+        run: php tests/runtime/database-concurrency.php
