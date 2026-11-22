@@ -91,6 +91,10 @@ karsabt_test('دریافت مدارک فقط از مسیر کاربران وار
 karsabt_test('کنترل مالکیت مشتری برای بارگذاری مدارک', strpos($docs, 'get_post_meta($order_id, \'_karsabt_customer_user_id\', true) !== get_current_user_id()') !== false);
 karsabt_test('ذخیره مدارک خارج از web root', strpos($docs, 'KARSABT_PRIVATE_UPLOAD_DIR') !== false && strpos($docs, 'realpath(ABSPATH)') !== false);
 karsabt_test('محدودیت نوع و اندازه مدارک', strpos($docs, 'FILEINFO_MIME_TYPE') !== false && strpos($docs, '5 * 1024 * 1024') !== false);
+karsabt_test('قفل دیتابیس برای تغییرات هم‌زمان مدارک', strpos($docs, 'SELECT GET_LOCK') !== false && strpos($docs, 'SELECT RELEASE_LOCK') !== false);
+karsabt_test('بارگذاری و بررسی مدیریتی مدارک از قفل پرونده استفاده می‌کنند', substr_count($docs, 'karsabt_docs_lock($order_id)') >= 2);
+karsabt_test('قفل مدارک پس از پایان عملیات آزاد می‌شود', substr_count($docs, 'karsabt_docs_unlock($lock_name)') >= 3);
+karsabt_test('محدودیت ۲۰ مدرک داخل ناحیه قفل بررسی می‌شود', strpos($docs, '$lock_name = karsabt_docs_lock($order_id)') < strpos($docs, 'if (count($docs) >= 20)'));
 karsabt_test('کنترل مجوز اختصاصی پرونده کارشناس', strpos($core, "add_filter('map_meta_cap', 'karsabt_core_staff_order_caps'") !== false && strpos($core, "return array('do_not_allow')") !== false);
 karsabt_test('محدودیت ویرایش کارشناس به پرونده تخصیص‌یافته', strpos($core, 'if ($assigned &&') !== false && strpos($core, "'edit_karsabt_orders'") !== false);
 karsabt_test('عدم اجازه حذف پرونده توسط کارشناس', strpos($core, "delete_karsabt_order' ===") !== false && strpos($core, "array('do_not_allow')") !== false);

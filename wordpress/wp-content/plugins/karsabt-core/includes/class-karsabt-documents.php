@@ -4,6 +4,22 @@
  */
 if (!defined('ABSPATH')) { exit; }
 
+/**
+ * قفل تغییر فهرست مدارک هر پرونده برای جلوگیری از بازنویسی تغییرات هم‌زمان.
+ */
+function karsabt_docs_lock($order_id) {
+    global $wpdb;
+    $name = 'karsabt_doc_' . substr(hash('sha256', (string) absint($order_id)), 0, 40);
+    return 1 === (int) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, 5)', $name)) ? $name : false;
+}
+
+function karsabt_docs_unlock($lock_name) {
+    global $wpdb;
+    if (is_string($lock_name) && '' !== $lock_name) {
+        $wpdb->get_var($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $lock_name));
+    }
+}
+
 function karsabt_docs_private_dir() {
     if (!defined('KARSABT_PRIVATE_UPLOAD_DIR') || !is_string(KARSABT_PRIVATE_UPLOAD_DIR)) {
         return '';
@@ -178,8 +194,6 @@ function karsabt_docs_upload_handler() {
     $rate_key = 'karsabt_docs_up_' . get_current_user_id();
     $uploads = (int) get_transient($rate_key);
     if ($uploads >= 10) { wp_die('سقف بارگذاری ساعتی تکمیل شده است.', '', array('response'=>429)); }
-    $existing_docs = get_post_meta($order_id, '_karsabt_documents', true);
-    if (is_array($existing_docs) && count($existing_docs) >= 20) { wp_die('برای این درخواست حداکثر ۲۰ مدرک مجاز است.', '', array('response'=>400)); }
     $dir = karsabt_docs_private_dir();
     if (!$dir || empty($_FILES['document']) || !isset($_FILES['document']['tmp_name'])) { wp_die('ذخیره‌سازی امن آماده نیست یا فایل ارسال نشده است.', '', array('response'=>400)); }
     $file = $_FILES['document'];
@@ -201,16 +215,26 @@ function karsabt_docs_upload_handler() {
     }
     if ('' !== $checklist_key && !$valid_item) { wp_die('مدرک انتخاب‌شده معتبر نیست.', '', array('response'=>400)); }
 
+    $lock_name = karsabt_docs_lock($order_id);
+    if (!$lock_name) { wp_die('مدارک این پرونده در حال به‌روزرسانی است؛ دوباره تلاش کنید.', '', array('response'=>503)); }
+    $docs = get_post_meta($order_id, '_karsabt_documents', true);
+    $docs = is_array($docs) ? $docs : array();
+    if (count($docs) >= 20) {
+        karsabt_docs_unlock($lock_name);
+        wp_die('برای این درخواست حداکثر ۲۰ مدرک مجاز است.', '', array('response'=>400));
+    }
     $id = bin2hex(random_bytes(16));
     $filename = $id . '.' . $allowed[$mime];
     $destination = $dir . '/' . $filename;
-    if (!move_uploaded_file($file['tmp_name'], $destination)) { wp_die('ذخیره فایل انجام نشد.', '', array('response'=>500)); }
+    if (!move_uploaded_file($file['tmp_name'], $destination)) {
+        karsabt_docs_unlock($lock_name);
+        wp_die('ذخیره فایل انجام نشد.', '', array('response'=>500));
+    }
     @chmod($destination, 0600);
-
-    $docs = get_post_meta($order_id, '_karsabt_documents', true);
-    $docs = is_array($docs) ? $docs : array();
     $docs[] = array('id'=>$id,'file'=>$filename,'name'=>sanitize_file_name($file['name']),'checklist_key'=>$valid_item ? $valid_item['key'] : '', 'checklist_title'=>$valid_item ? $valid_item['title'] : '', 'mime'=>$mime,'size'=>(int)$file['size'],'category'=>$category,'status'=>'pending','admin_note'=>'','uploaded_at'=>current_time('mysql'),'user_id'=>get_current_user_id());
-    if (!update_post_meta($order_id, '_karsabt_documents', $docs)) {
+    $saved = update_post_meta($order_id, '_karsabt_documents', $docs);
+    karsabt_docs_unlock($lock_name);
+    if (false === $saved) {
         if (is_file($destination)) { @unlink($destination); }
         wp_die('ثبت اطلاعات مدرک انجام نشد؛ فایل ذخیره‌شده حذف شد.', '', array('response'=>500));
     }
@@ -293,6 +317,10 @@ function karsabt_docs_admin_page() {
             !preg_match('/^[a-f0-9]{32}$/', $document_id)) {
             $notice = '<div class="notice notice-error"><p>درخواست یا شناسه مدرک معتبر نیست.</p></div>';
         } else {
+            $lock_name = karsabt_docs_lock($order_id);
+            if (!$lock_name) {
+                $notice = '<div class="notice notice-error"><p>مدارک پرونده در حال به‌روزرسانی است؛ دوباره تلاش کنید.</p></div>';
+            } else {
             list($doc, $docs) = karsabt_docs_find($order_id, $document_id);
             if ($doc && isset(karsabt_docs_review_states()[$status])) {
                 $doc['status'] = $status;
@@ -310,6 +338,8 @@ function karsabt_docs_admin_page() {
                 }
             } else {
                 $notice = '<div class="notice notice-error"><p>مدرک یا وضعیت معتبر نیست.</p></div>';
+            }
+            karsabt_docs_unlock($lock_name);
             }
         }
     }
