@@ -62,12 +62,21 @@ get_header();
 </div>
 <?php if (!$ks_phone_link && !$ks_whatsapp && !$ks_telegram && !$ks_rubika && !$ks_eitaa) : ?><p class="ks-onepage__contact-warning">برای نمایش دکمه‌های تماس و پیام‌رسان، اطلاعات ارتباطی را در نمایش ← سفارشی‌سازی ← اطلاعات تماس کارثبت وارد کنید.</p><?php endif; ?>
 <small>کارثبت؛ خدمات ثبتی و راهنمایی امور کسب‌وکار</small></div></section>
+
+<?php if ($ks_phone_link || $ks_whatsapp || $ks_telegram || $ks_rubika || $ks_eitaa) : ?>
+<nav class="ks-onepage__mobile-bar" aria-label="ارتباط سریع با کارثبت">
+<?php if ($ks_phone_link) : ?><a class="ks-mobile-call" href="tel:<?php echo esc_attr($ks_phone_link); ?>">تماس با کارثبت</a><?php endif; ?>
+<?php if ($ks_whatsapp) : ?><a class="ks-mobile-message" href="<?php echo esc_url($ks_whatsapp); ?>" target="_blank" rel="noopener noreferrer">پیام در واتساپ</a>
+<?php elseif ($ks_telegram) : ?><a class="ks-mobile-message" href="<?php echo esc_url($ks_telegram); ?>" target="_blank" rel="noopener noreferrer">پیام در تلگرام</a>
+<?php elseif ($ks_rubika) : ?><a class="ks-mobile-message" href="<?php echo esc_url($ks_rubika); ?>" target="_blank" rel="noopener noreferrer">پیام در روبیکا</a>
+<?php elseif ($ks_eitaa) : ?><a class="ks-mobile-message" href="<?php echo esc_url($ks_eitaa); ?>" target="_blank" rel="noopener noreferrer">پیام در ایتا</a><?php endif; ?>
+</nav>
+<?php endif; ?>
 </main>
 <?php
 $ks_graph = array('@context' => 'https://schema.org', '@graph' => array(
 array('@type' => 'Service', '@id' => get_permalink($ks_post_id) . '#company-registration-service', 'name' => 'خدمات ثبت شرکت', 'serviceType' => 'ثبت شرکت در ایران', 'url' => get_permalink($ks_post_id), 'description' => wp_strip_all_tags($ks_description), 'provider' => array('@id' => home_url('/#organization')), 'areaServed' => array('@type' => 'Country', 'name' => 'ایران'), 'availableLanguage' => 'Persian'),
-array('@type' => 'WebPage', '@id' => get_permalink($ks_post_id) . '#webpage', 'url' => get_permalink($ks_post_id), 'name' => get_the_title($ks_post_id), 'description' => wp_strip_all_tags($ks_description), 'inLanguage' => 'fa-IR', 'about' => array('@id' => get_permalink($ks_post_id) . '#company-registration-service'))
-));
+);
 $ks_entities = array();
 foreach ($ks_faq_items as $ks_faq) { if (empty($ks_faq['question']) || empty($ks_faq['answer'])) { continue; } $ks_entities[] = array('@type' => 'Question', 'name' => wp_strip_all_tags($ks_faq['question']), 'acceptedAnswer' => array('@type' => 'Answer', 'text' => wp_strip_all_tags($ks_faq['answer']))); }
 if ($ks_entities) { $ks_graph['@graph'][] = array('@type' => 'FAQPage', '@id' => get_permalink($ks_post_id) . '#faq', 'mainEntity' => $ks_entities); }
