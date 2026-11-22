@@ -118,7 +118,8 @@ function karsabt_register_order_post_type() {
     register_post_type('karsabt_order', array(
         'labels'=>array('name'=>'سفارش‌ها','singular_name'=>'سفارش','menu_name'=>'سفارش‌ها','edit_item'=>'مشاهده سفارش'),
         'public'=>false,'show_ui'=>true,'show_in_menu'=>true,'show_in_rest'=>false,
-        'supports'=>array('title'),'capability_type'=>'post','map_meta_cap'=>true,
+        'supports'=>array('title'),'capability_type'=>array('karsabt_order','karsabt_orders'),'map_meta_cap'=>true,
+        'capabilities'=>array('edit_post'=>'edit_karsabt_order','read_post'=>'read_karsabt_order','delete_post'=>'delete_karsabt_order','edit_posts'=>'edit_karsabt_orders','edit_others_posts'=>'edit_others_karsabt_orders','publish_posts'=>'publish_karsabt_orders','read_private_posts'=>'read_private_karsabt_orders','delete_posts'=>'delete_karsabt_orders','delete_private_posts'=>'delete_private_karsabt_orders','delete_published_posts'=>'delete_published_karsabt_orders','delete_others_posts'=>'delete_others_karsabt_orders','edit_private_posts'=>'edit_private_karsabt_orders','edit_published_posts'=>'edit_published_karsabt_orders'),
         'menu_icon'=>'dashicons-clipboard'
     ));
 }
@@ -142,7 +143,12 @@ function karsabt_order_submit() {
     $phone=isset($_POST['karsabt_customer_phone'])?sanitize_text_field(wp_unslash($_POST['karsabt_customer_phone'])):'';
     $message=isset($_POST['karsabt_customer_message'])?sanitize_textarea_field(wp_unslash($_POST['karsabt_customer_message'])):'';
     $service_id=isset($_POST['karsabt_service_id'])?absint($_POST['karsabt_service_id']):0;
-    if(mb_strlen($name)<2||mb_strlen($phone)<7||!$service_id||get_post_type($service_id)!=='karsabt_service') wp_die('اطلاعات واردشده کامل یا معتبر نیست. لطفاً بازگشته و فرم را بررسی کنید.');
+    $normalized_phone = karsabt_normalize_phone($phone);
+    if(mb_strlen($name)<2||mb_strlen($name)>120||!preg_match('/^09[0-9]{9}$/', $normalized_phone)||!$service_id||get_post_type($service_id)!=='karsabt_service'||get_post_status($service_id)!=='publish'||mb_strlen($message)>3000) wp_die('اطلاعات واردشده کامل یا معتبر نیست. لطفاً بازگشته و فرم را بررسی کنید.');
+    $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
+    $rate_key = 'karsabt_order_rate_' . hash('sha256', $ip . wp_salt('auth'));
+    if ($ip && get_transient($rate_key)) wp_die('درخواست شما اخیراً ثبت شده است. لطفاً چند دقیقه دیگر تلاش کنید.');
+    if ($ip) set_transient($rate_key, 1, 60);
     $service_title=get_the_title($service_id);
     $code='KS-'.gmdate('ymd').'-'.wp_rand(1000,9999);
     $order_id=wp_insert_post(array('post_type'=>'karsabt_order','post_status'=>'karsabt_new','post_title'=>$code.' | '.$name,'post_content'=>''),true);
@@ -266,7 +272,8 @@ function karsabt_register_customer_post_type() {
     register_post_type('karsabt_customer',array(
         'labels'=>array('name'=>'مشتریان','singular_name'=>'مشتری','menu_name'=>'مشتریان','add_new'=>'مشتری جدید','edit_item'=>'پرونده مشتری'),
         'public'=>false,'show_ui'=>true,'show_in_menu'=>true,'show_in_rest'=>false,
-        'supports'=>array('title'),'capability_type'=>'post','map_meta_cap'=>true,
+        'supports'=>array('title'),'capability_type'=>array('karsabt_customer','karsabt_customers'),'map_meta_cap'=>true,
+        'capabilities'=>array('edit_post'=>'edit_karsabt_customer','read_post'=>'read_karsabt_customer','delete_post'=>'delete_karsabt_customer','edit_posts'=>'edit_karsabt_customers','edit_others_posts'=>'edit_others_karsabt_customers','publish_posts'=>'publish_karsabt_customers','read_private_posts'=>'read_private_karsabt_customers','delete_posts'=>'delete_karsabt_customers','delete_private_posts'=>'delete_private_karsabt_customers','delete_published_posts'=>'delete_published_karsabt_customers','delete_others_posts'=>'delete_others_karsabt_customers','edit_private_posts'=>'edit_private_karsabt_customers','edit_published_posts'=>'edit_published_karsabt_customers'),
         'menu_icon'=>'dashicons-groups'
     ));
 }
@@ -274,9 +281,11 @@ add_action('init','karsabt_register_customer_post_type');
 
 /** شماره تماس را برای تطبیق به شکل یکسان تبدیل می‌کند */
 function karsabt_normalize_phone($phone) {
-    $phone=preg_replace('/[^0-9+]/','',(string)$phone);
-    if(substr($phone,0,2)==='98') $phone='0'.substr($phone,2);
-    if(substr($phone,0,3)==='+98') $phone='0'.substr($phone,3);
+    $phone = strtr((string) $phone, array('۰'=>'0','۱'=>'1','۲'=>'2','۳'=>'3','۴'=>'4','۵'=>'5','۶'=>'6','۷'=>'7','۸'=>'8','۹'=>'9','٠'=>'0','١'=>'1','٢'=>'2','٣'=>'3','٤'=>'4','٥'=>'5','٦'=>'6','٧'=>'7','٨'=>'8','٩'=>'9'));
+    $phone = preg_replace('/[^0-9+]/', '', $phone);
+    if (strpos($phone, '+98') === 0) $phone = '0' . substr($phone, 3);
+    elseif (strpos($phone, '0098') === 0) $phone = '0' . substr($phone, 4);
+    elseif (strpos($phone, '98') === 0 && strlen($phone) >= 12) $phone = '0' . substr($phone, 2);
     return $phone;
 }
 
