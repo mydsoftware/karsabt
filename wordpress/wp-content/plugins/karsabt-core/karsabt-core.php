@@ -233,6 +233,10 @@ function karsabt_core_submit_order() {
         karsabt_core_redirect_form('invalid');
     }
 
+    if (karsabt_core_order_rate_limited()) {
+        karsabt_core_redirect_form('invalid');
+    }
+
     $name = isset($_POST['customer_name']) ? sanitize_text_field(wp_unslash($_POST['customer_name'])) : '';
     $phone = isset($_POST['customer_phone']) ? sanitize_text_field(wp_unslash($_POST['customer_phone'])) : '';
     $service = isset($_POST['service']) ? sanitize_key(wp_unslash($_POST['service'])) : '';
@@ -382,6 +386,21 @@ function karsabt_core_normalize_mobile($mobile) {
 /**
  * محدودیت تلاش برای فرم‌های ورود و ثبت‌نام.
  */
+/**
+ * محدودسازی ثبت سفارش عمومی برای کاهش هرزنامه و فشار روی پایگاه داده.
+ * محدودیت بر مبنای IP و به‌صورت best-effort با Transient وردپرس است.
+ */
+function karsabt_core_order_rate_limited() {
+    $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
+    $key = 'karsabt_order_submit_' . hash('sha256', $ip);
+    $attempts = (int) get_transient($key);
+    if ($attempts >= 5) {
+        return true;
+    }
+    set_transient($key, $attempts + 1, 15 * MINUTE_IN_SECONDS);
+    return false;
+}
+
 function karsabt_core_auth_rate_limited() {
     $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
     $key = 'karsabt_auth_' . hash('sha256', $ip);
@@ -422,10 +441,9 @@ function karsabt_core_customer_auth() {
                 $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">شماره موبایل معتبر نیست.</p>';
             } elseif (0 === strpos($mode, 'send_')) {
                 $users = get_users(array('meta_key' => '_karsabt_mobile', 'meta_value' => $mobile, 'number' => 1, 'fields' => 'ID'));
-                if ('send_login' === $mode && !$users) {
-                    $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">حسابی با این شماره پیدا نشد. ابتدا ثبت‌نام کنید.</p>';
-                } elseif ('send_register' === $mode && $users) {
-                    $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">با این شماره قبلاً حساب ساخته شده است. از بخش ورود استفاده کنید.</p>';
+                if (('send_login' === $mode && !$users) || ('send_register' === $mode && $users)) {
+                    // پاسخ یکسان برای جلوگیری از افشای وجود یا عدم وجود حساب با شماره موبایل.
+                    $notice = '<p class="karsabt-form-notice karsabt-form-success" role="status">اگر شماره واردشده برای این روش واجد شرایط باشد، کد تأیید ارسال می‌شود. در غیر این صورت راهنمایی لازم نمایش داده خواهد شد.</p>';
                 } else {
                     $sent = Karsabt_OTP_Service::send($mobile);
                     if (is_wp_error($sent)) {
