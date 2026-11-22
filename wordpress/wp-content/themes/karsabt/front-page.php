@@ -25,7 +25,7 @@ $popular=get_post_meta(get_the_ID(),'_karsabt_service_popular',true)==='1';
 <?php endwhile;wp_reset_postdata();else:
 $services=array(array('🏢','ثبت شرکت و تغییرات','ثبت شرکت، تغییر اعضا و تغییرات قانونی'),array('🏅','ثبت برند و علامت تجاری','ثبت و پیگیری علامت تجاری'),array('🏬','جواز کسب و پروانه صنفی','راهنمایی و پیگیری مجوزهای صنفی'),array('🏠','مجوز مشاغل خانگی','دریافت مجوز فعالیت‌های خانگی'),array('🖥️','کافی‌نت آنلاین','انجام خدمات اینترنتی و سامانه‌ای'),array('📄','خدمات اداری و اینترنتی','انجام امور اداری و ثبت درخواست‌ها'));
 foreach($services as $s): ?><a class="service-card" href="#contact"><div class="service-icon"><?php echo esc_html($s[0]); ?></div><h3><?php echo esc_html($s[1]); ?></h3><p><?php echo esc_html($s[2]); ?></p><div class="service-price"><strong>استعلام قیمت</strong></div></a><?php endforeach; endif; ?>
-</div></div></div></section>
+</div></div></section>
 <section class="benefits"><div class="container benefit-grid"><div class="benefit"><b>🛡️</b>امنیت اطلاعات و محرمانگی</div><div class="benefit"><b>⚡</b>پردازش سریع و بدون اتلاف وقت</div><div class="benefit"><b>🤝</b>پشتیبانی حرفه‌ای</div><div class="benefit"><b>✓</b>مشاوره پیش از سفارش</div></div></section>
 <section class="section blog-section"><div class="container"><div class="section-head"><h2>آخرین مقالات و آموزش‌ها</h2><p>دانش کاربردی برای شروع و توسعه کسب‌وکار</p></div><div class="posts-grid">
 <?php $q=new WP_Query(array('post_type'=>'post','posts_per_page'=>3,'post_status'=>'publish')); if($q->have_posts()):while($q->have_posts()):$q->the_post(); ?>
