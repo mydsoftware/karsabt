@@ -92,10 +92,10 @@ karsabt_test('کنترل مالکیت مشتری برای بارگذاری مد�
 karsabt_test('ذخیره مدارک خارج از web root', strpos($docs, 'KARSABT_PRIVATE_UPLOAD_DIR') !== false && strpos($docs, 'realpath(ABSPATH)') !== false);
 karsabt_test('محدودیت نوع و اندازه مدارک', strpos($docs, 'FILEINFO_MIME_TYPE') !== false && strpos($docs, '5 * 1024 * 1024') !== false);
 karsabt_test('کنترل مجوز اختصاصی پرونده کارشناس', strpos($core, "add_filter('map_meta_cap', 'karsabt_core_staff_order_caps'") !== false && strpos($core, "return array('do_not_allow')") !== false);
-karsabt_test('محدودیت ویرایش کارشناس به پرونده تخصیص‌یافته', strpos($core, "if ($assigned && $assigned === (int) $user_id && user_can($user_id, 'edit_karsabt_orders'))") !== false);
-karsabt_test('عدم اجازه حذف پرونده توسط کارشناس', strpos($core, "return ('delete_karsabt_order' === $cap) ? array('do_not_allow')") !== false);
+karsabt_test('محدودیت ویرایش کارشناس به پرونده تخصیص‌یافته', strpos($core, 'if ($assigned && $assigned === (int) $user_id && user_can($user_id, \'edit_karsabt_orders\'))') !== false);
+karsabt_test('عدم اجازه حذف پرونده توسط کارشناس', strpos($core, 'return (\'delete_karsabt_order\' === $cap) ? array(\'do_not_allow\')') !== false);
 karsabt_test('جلوگیری از ساخت پرونده توسط نقش کارشناس', strpos($core, "'create_posts'           => 'do_not_allow'") !== false);
-karsabt_test('شناسه ورود قطعی و یکتا بر اساس موبایل', strpos($core, "$login = 'krs_' . substr(hash('sha256', $mobile), 0, 24)") !== false);
+karsabt_test('شناسه ورود قطعی و یکتا بر اساس موبایل', strpos($core, "\$login = 'krs_' . substr(hash('sha256', \$mobile), 0, 24)") !== false);
 karsabt_test('ثبت‌نام فقط با نقش مشتری عادی', strpos($core, "'role' => 'subscriber'") !== false);
 
 
