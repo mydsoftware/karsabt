@@ -69,6 +69,13 @@ if (!is_wp_error($staffId) && !is_wp_error($customerId)) {
     if (!is_wp_error($orderA) && !is_wp_error($orderB)) {
         update_post_meta($orderA, '_karsabt_assigned_user_id', $staffId);
         update_post_meta($orderB, '_karsabt_assigned_user_id', $customerId);
+        if (!user_can($staffId, 'edit_post', $orderA)) {
+            $debugUser = get_user_by('id', $staffId);
+            fwrite(STDERR, '[جزئیات] نقش=' . implode(',', (array) $debugUser->roles)
+                . ' مجوز=' . (user_can($staffId, 'edit_karsabt_orders') ? 'yes' : 'no')
+                . ' تخصیص=' . get_post_meta($orderA, '_karsabt_assigned_user_id', true)
+                . ' map=' . implode(',', map_meta_cap('edit_post', $staffId, $orderA)) . "\\n");
+        }
         $assert(user_can($staffId, 'edit_post', $orderA), 'کارشناس می‌تواند پرونده تخصیص‌یافته را ویرایش کند');
         $assert(!user_can($staffId, 'edit_post', $orderB), 'کارشناس به پرونده تخصیص‌نیافته دسترسی ویرایش ندارد');
         $assert(!user_can($staffId, 'delete_post', $orderA), 'کارشناس اجازه حذف پرونده را ندارد');
