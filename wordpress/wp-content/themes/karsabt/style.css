@@ -85,3 +85,18 @@ Text Domain: karsabt
 .services-archive-grid .service-card h2{font-size:18px;margin:0;color:var(--navy)}
 .services-archive-grid .service-card{display:flex;flex-direction:column;align-items:center}
 @media(max-width:600px){.service-detail-header{align-items:flex-start;gap:14px}.service-detail-icon{width:64px;height:64px;flex-basis:64px;font-size:36px;border-radius:18px}.service-detail-header h1{font-size:25px}}
+
+/* تعرفه و برچسب خدمات */
+.service-card{position:relative;overflow:hidden}
+.service-card.is-featured{border-color:#78b9ed;background:linear-gradient(180deg,#f7fbff,#fff)}
+.service-badges{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;min-height:24px;margin-bottom:5px}
+.service-badge{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:800}
+.service-badge.featured{background:#fff1c7;color:#805800;border:1px solid #f2d67b}
+.service-badge.popular{background:#e7f7ed;color:#14733b;border:1px solid #b8e4c8}
+.service-price{display:flex;flex-direction:column;gap:2px;margin:10px 0 5px;font-size:13px;color:var(--muted)}
+.service-price del,.service-detail-price del{font-size:12px;color:#8a97a9}
+.service-price strong,.service-detail-price strong{font-size:17px;color:var(--blue);font-weight:900}
+.service-card .text-link{display:inline-block;margin-top:7px;font-size:13px}
+.service-detail-pricing{margin:20px 0;padding:18px;background:#f5f9ff;border:1px solid var(--line);border-radius:16px;text-align:center}
+.service-detail-price{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px}
+.service-detail-price strong{font-size:clamp(20px,4vw,28px)}
