@@ -450,7 +450,8 @@ function karsabt_core_customer_auth() {
                         // خطاهای درگاه، محدودیت ارسال و وضعیت حساب نباید تفاوت قابل تشخیص ایجاد کنند.
                         $notice = '<p class="karsabt-form-notice karsabt-form-success" role="status">اگر شماره واردشده برای این روش واجد شرایط باشد، کد تأیید ارسال می‌شود. در غیر این صورت راهنمایی لازم نمایش داده خواهد شد.</p>';
                     } else {
-                        $notice = '<p class="karsabt-form-notice karsabt-form-success" role="status">درخواست ارسال کد ثبت شد. اگر پیامک را دریافت کردید، کد را در فرم تأیید وارد کنید.</p>';
+                        // پاسخ موفق نیز با حالت شماره ناموجود یکسان است تا امکان enumeration باقی نماند.
+                        $notice = '<p class="karsabt-form-notice karsabt-form-success" role="status">اگر شماره واردشده برای این روش واجد شرایط باشد، کد تأیید ارسال می‌شود. در غیر این صورت راهنمایی لازم نمایش داده خواهد شد.</p>';
                     }
                 }
             } else {
