@@ -85,13 +85,26 @@ function karsabt_core_register_staff_role() {
 add_action('init', 'karsabt_core_register_staff_role', 20);
 
 function karsabt_core_staff_order_caps($caps, $cap, $user_id, $args) {
-    if (!in_array($cap, array('edit_karsabt_order','read_karsabt_order','delete_karsabt_order'), true) || empty($args[0])) { return $caps; }
-    if (user_can($user_id, 'manage_options')) { return array('manage_options'); }
+    $operations = array(
+        'edit_post' => 'edit_karsabt_order',
+        'read_post' => 'read_karsabt_order',
+        'delete_post' => 'delete_karsabt_order',
+        'edit_karsabt_order' => 'edit_karsabt_order',
+        'read_karsabt_order' => 'read_karsabt_order',
+        'delete_karsabt_order' => 'delete_karsabt_order',
+    );
+    if (!isset($operations[$cap]) || empty($args[0])) { return $caps; }
+
     $order_id = absint($args[0]);
+    if (!$order_id || 'karsabt_order' !== get_post_type($order_id)) { return $caps; }
+    if (user_can($user_id, 'manage_options')) { return array('manage_options'); }
+
+    $operation = $operations[$cap];
     $assigned = absint(get_post_meta($order_id, '_karsabt_assigned_user_id', true));
     if ($assigned && $assigned === (int) $user_id && user_can($user_id, 'edit_karsabt_orders')) {
-        return ('delete_karsabt_order' === $cap) ? array('do_not_allow') : array('edit_karsabt_orders');
+        return ('delete_karsabt_order' === $operation) ? array('do_not_allow') : array('edit_karsabt_orders');
     }
+
     return array('do_not_allow');
 }
 add_filter('map_meta_cap', 'karsabt_core_staff_order_caps', 10, 4);
