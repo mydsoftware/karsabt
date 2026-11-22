@@ -1,0 +1,88 @@
+name: آزمون یکپارچه وردپرس و MariaDB
+
+on:
+  push:
+    branches: [main, 'test/**']
+    paths:
+      - "wordpress/wp-content/**"
+      - "tests/runtime/**"
+      - ".github/workflows/wordpress-integration.yml"
+  pull_request:
+    paths:
+      - "wordpress/wp-content/**"
+      - "tests/runtime/**"
+      - ".github/workflows/wordpress-integration.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wordpress-mariadb:
+    name: نصب و آزمون واقعی وردپرس
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: karsabt_test
+          MARIADB_USER: karsabt
+          MARIADB_PASSWORD: karsabt_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: دریافت کد
+        uses: actions/checkout@v4
+
+      - name: راه‌اندازی PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mysqli, curl, dom, json, mbstring, zip
+          coverage: none
+
+      - name: نصب WP-CLI
+        run: |
+          curl -fsSLo wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          php wp-cli.phar --info
+          sudo mv wp-cli.phar /usr/local/bin/wp
+          sudo chmod +x /usr/local/bin/wp
+
+      - name: دریافت هسته وردپرس
+        run: |
+          mkdir -p "$RUNNER_TEMP/wordpress"
+          cd "$RUNNER_TEMP/wordpress"
+          wp core download --allow-root --version=latest
+
+      - name: پیکربندی و نصب وردپرس
+        env:
+          DB_NAME: karsabt_test
+          DB_USER: karsabt
+          DB_PASSWORD: karsabt_test
+          DB_HOST: 127.0.0.1:3306
+        run: |
+          cd "$RUNNER_TEMP/wordpress"
+          wp config create --dbname="$DB_NAME" --dbuser="$DB_USER" --dbpass="$DB_PASSWORD" --dbhost="$DB_HOST" --allow-root
+          wp core install --url=http://localhost:8080 --title="Karsabt CI" --admin_user=ci-admin --admin_password=ci-password-123 --admin_email=ci@example.test --skip-email --allow-root
+
+      - name: نصب و فعال‌سازی افزونه و قالب کارثبت
+        run: |
+          cd "$RUNNER_TEMP/wordpress"
+          mkdir -p wp-content/plugins/karsabt-core wp-content/themes/karsabt
+          cp -a "$GITHUB_WORKSPACE/wordpress/wp-content/plugins/karsabt-core/." wp-content/plugins/karsabt-core/
+          cp -a "$GITHUB_WORKSPACE/wordpress/wp-content/themes/karsabt/." wp-content/themes/karsabt/
+          wp plugin activate karsabt-core --allow-root
+          wp theme activate karsabt --allow-root
+          wp eval 'do_action("admin_init");' --allow-root
+
+      - name: آزمون یکپارچگی وردپرس، نقش‌ها و موتور دیتابیس
+        env:
+          KARSABT_WP_PATH: ${{ runner.temp }}/wordpress
+        run: php tests/runtime/wordpress-smoke.php
