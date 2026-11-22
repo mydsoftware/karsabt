@@ -82,7 +82,7 @@ $otp = is_file($otp_path) ? (string) file_get_contents($otp_path) : '';
 
 karsabt_test('وجود افزونه مستقل Karsabt Core', is_file($root . '/wordpress/wp-content/plugins/karsabt-core/karsabt-core.php'));
 karsabt_test('محدودسازی ارسال سفارش عمومی', strpos($core, 'function karsabt_core_order_rate_limited()') !== false && strpos($core, 'if (karsabt_core_order_rate_limited())') !== false);
-karsabt_test('عدم افشای وجود حساب در درخواست OTP', strpos($core, 'حسابی با این شماره پیدا نشد') === false && strpos($core, 'با این شماره قبلاً حساب ساخته شده است. از بخش ورود استفاده کنید') === false);
+karsabt_test('عدم افشای وجود حساب در درخواست OTP', strpos($core, 'حسابی با این شماره پیدا نشد') === false && strpos($core, 'با این شماره قبلاً حساب ساخته شده است. از بخش ورود استفاده کنید') === false && strpos($core, 'درخواست ارسال کد ثبت شد') === false);
 karsabt_test('پاسخ یکسان برای خطاهای تأیید OTP', strpos($core, 'کد تأیید معتبر نیست یا منقضی شده است. دوباره درخواست کد بدهید.') !== false);
 karsabt_test('محدودسازی ارسال OTP بر اساس IP', strpos($otp, "ip_rate_limited('send'") !== false);
 karsabt_test('محدودسازی بررسی OTP بر اساس IP', strpos($otp, "ip_rate_limited('verify'") !== false);
