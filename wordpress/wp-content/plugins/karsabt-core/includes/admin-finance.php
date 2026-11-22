@@ -28,7 +28,7 @@ function karsabt_finance_install() {
         PRIMARY KEY  (id),
         KEY invoice_id (invoice_id),
         KEY created_at (created_at)
-    ) {$charset};";
+    ) {$charset} ENGINE=InnoDB;";
     dbDelta($sql);
     update_option('karsabt_finance_db_version', '1');
 }
@@ -176,14 +176,23 @@ function karsabt_finance_render_payments() {
         if (!$invoice || 'karsabt_invoice' !== $invoice->post_type || 'private' !== $invoice->post_status || $amount < 1 || $amount > 2000000000000 || !isset($methods[$method]) || $amount > ($total - $paid)) {
             $notice = '<div class="notice notice-error"><p>اطلاعات پرداخت معتبر نیست یا مبلغ از مانده فاکتور بیشتر است.</p></div>';
         } else {
-            // قفل ردیف درخواست برای جلوگیری از ثبت هم‌زمان پرداخت بیش از مانده.
-            $wpdb->query('START TRANSACTION');
-            $locked_invoice = $wpdb->get_var($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE ID = %d FOR UPDATE", $invoice_id));
-            $fresh_paid = $locked_invoice ? karsabt_finance_invoice_paid($invoice_id) : $total;
-            if (!$locked_invoice || $amount > ($total - $fresh_paid)) {
-                $wpdb->query('ROLLBACK');
-                $notice = '<div class="notice notice-error"><p>مانده فاکتور تغییر کرده است؛ صفحه را تازه‌سازی و مبلغ را دوباره بررسی کنید.</p></div>';
+            // تراکنش فقط وقتی معتبر است که جدول پرداخت‌ها InnoDB باشد.
+            $started = $wpdb->query('START TRANSACTION');
+            if (false === $started) {
+                $notice = '<div class="notice notice-error"><p>شروع تراکنش پایگاه داده ناموفق بود؛ پرداخت ثبت نشد.</p></div>';
             } else {
+                // قفل ردیف فاکتور و بازخوانی مبلغ/پرداخت‌ها داخل تراکنش.
+                $locked_invoice = $wpdb->get_var($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE ID = %d FOR UPDATE", $invoice_id));
+                if (!$locked_invoice) {
+                    $wpdb->query('ROLLBACK');
+                    $notice = '<div class="notice notice-error"><p>قفل فاکتور برقرار نشد؛ پرداخت ثبت نشد.</p></div>';
+                } else {
+                    $total = (int) get_post_meta($invoice_id, '_karsabt_invoice_amount', true);
+                    $fresh_paid = karsabt_finance_invoice_paid($invoice_id);
+                    if ($amount > max(0, $total - $fresh_paid)) {
+                        $wpdb->query('ROLLBACK');
+                        $notice = '<div class="notice notice-error"><p>مانده فاکتور تغییر کرده است؛ صفحه را تازه‌سازی و مبلغ را دوباره بررسی کنید.</p></div>';
+                    } else {
                 $inserted = $wpdb->insert($table, array(
                     'invoice_id' => $invoice_id, 'amount' => $amount, 'method' => $method,
                     'reference' => $reference, 'note' => $note, 'created_by' => get_current_user_id(),
@@ -195,10 +204,12 @@ function karsabt_finance_render_payments() {
                 } else {
                     $wpdb->query('ROLLBACK');
                     $notice = '<div class="notice notice-error"><p>ثبت پرداخت در پایگاه داده انجام نشد.</p></div>';
+                    }
                 }
             }
         }
     }
+        }
     $invoices = get_posts(array('post_type' => 'karsabt_invoice', 'post_status' => 'private', 'posts_per_page' => 200, 'orderby' => 'date', 'order' => 'DESC'));
     echo '<div class="wrap"><h1>ثبت پرداخت</h1>' . $notice . '<form method="post">';
     wp_nonce_field('karsabt_record_payment');

@@ -112,6 +112,8 @@ karsabt_test('پنل پیام‌های مدیریتی فقط برای مدیر',
 karsabt_test('امور مالی فقط برای مدیر قابل دسترسی است', substr_count($finance, "current_user_can('manage_options')") >= 3);
 karsabt_test('ممانعت از پرداخت بیشتر از مانده فاکتور', strpos($finance, '$amount > ($total - $paid)') !== false);
 karsabt_test('قفل تراکنشی ثبت پرداخت هم‌زمان', strpos($finance, "FOR UPDATE") !== false && strpos($finance, "START TRANSACTION") !== false && strpos($finance, "COMMIT") !== false && strpos($finance, "ROLLBACK") !== false);
+karsabt_test('جدول پرداخت‌ها با موتور تراکنشی InnoDB ساخته می‌شود', strpos($finance, 'ENGINE=InnoDB') !== false);
+karsabt_test('بازخوانی مبلغ فاکتور پس از قفل تراکنشی', strpos($finance, '_karsabt_invoice_amount') !== false && strpos($finance, '$fresh_paid = karsabt_finance_invoice_paid($invoice_id)') !== false);
 karsabt_test('نمایش فاکتور فقط به مالک حساب', strpos($finance, '_karsabt_invoice_customer_user_id') !== false && strpos($finance, '!== $user_id') !== false);
 
 
