@@ -114,11 +114,15 @@ function karsabt_customize_register($wp_customize) {
         'karsabt_contact_phone' => array('تلفن تماس', 'text', ''),
         'karsabt_contact_email' => array('ایمیل تماس', 'email', ''),
         'karsabt_contact_location' => array('نشانی یا محدوده فعالیت', 'text', ''),
+        'karsabt_whatsapp_url' => array('پیوند واتساپ (wa.me)', 'url', ''),
+        'karsabt_telegram_url' => array('پیوند تلگرام', 'url', ''),
+        'karsabt_rubika_url' => array('پیوند روبیکا', 'url', ''),
+        'karsabt_eitaa_url' => array('پیوند ایتا', 'url', ''),
     );
     foreach ($fields as $setting => $field) {
         $wp_customize->add_setting($setting, array(
             'default' => $field[2],
-            'sanitize_callback' => $field[1] === 'email' ? 'sanitize_email' : 'sanitize_text_field',
+            'sanitize_callback' => $field[1] === 'url' ? 'esc_url_raw' : ($field[1] === 'email' ? 'sanitize_email' : 'sanitize_text_field'),
             'transport' => 'refresh',
         ));
         $wp_customize->add_control($setting, array(
