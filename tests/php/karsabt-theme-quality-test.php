@@ -88,7 +88,7 @@ karsabt_test('محدودسازی ارسال OTP بر اساس IP', strpos($otp, 
 karsabt_test('محدودسازی بررسی OTP بر اساس IP', strpos($otp, "ip_rate_limited('verify'") !== false);
 karsabt_test('محدودیت OTP برای هر شماره حفظ شده است', strpos($otp, 'MAX_SENDS_PER_HOUR = 5') !== false && strpos($otp, 'MAX_VERIFY_ATTEMPTS = 5') !== false);
 karsabt_test('دریافت مدارک فقط از مسیر کاربران واردشده', strpos($docs, "add_action('admin_post_nopriv_karsabt_document_download'") === false && strpos($docs, "add_action('admin_post_karsabt_document_download'") !== false);
-karsabt_test('کنترل مالکیت مشتری برای بارگذاری مدارک', strpos($docs, "get_post_meta($order_id, '_karsabt_customer_user_id', true) !== get_current_user_id()") !== false);
+karsabt_test('کنترل مالکیت مشتری برای بارگذاری مدارک', strpos($docs, 'get_post_meta($order_id, \'_karsabt_customer_user_id\', true) !== get_current_user_id()') !== false);
 karsabt_test('ذخیره مدارک خارج از web root', strpos($docs, 'KARSABT_PRIVATE_UPLOAD_DIR') !== false && strpos($docs, 'realpath(ABSPATH)') !== false);
 karsabt_test('محدودیت نوع و اندازه مدارک', strpos($docs, 'FILEINFO_MIME_TYPE') !== false && strpos($docs, '5 * 1024 * 1024') !== false);
 karsabt_test('کنترل مجوز اختصاصی پرونده کارشناس', strpos($core, "add_filter('map_meta_cap', 'karsabt_core_staff_order_caps'") !== false && strpos($core, "return array('do_not_allow')") !== false);
