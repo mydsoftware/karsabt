@@ -16,6 +16,15 @@ $ks_rubika = trim((string) get_theme_mod('karsabt_rubika_url', ''));
 $ks_eitaa = trim((string) get_theme_mod('karsabt_eitaa_url', ''));
 $ks_faq_items = get_post_meta($ks_post_id, '_karsabt_service_faq', true);
 $ks_faq_items = is_array($ks_faq_items) ? $ks_faq_items : array();
+if (!$ks_faq_items) {
+    $ks_faq_items = array(
+        array('question' => 'ثبت شرکت در ایران چه مراحلی دارد؟', 'answer' => 'ابتدا نوع شرکت و موضوع فعالیت مشخص می‌شود؛ سپس نام‌های پیشنهادی، اطلاعات شرکا و مدیران و مدارک لازم آماده و درخواست از مسیر قانونی ثبت پیگیری می‌شود. جزئیات مراحل به نوع شرکت و شرایط پرونده بستگی دارد.'),
+        array('question' => 'برای ثبت شرکت چه مدارکی لازم است؟', 'answer' => 'معمولاً اطلاعات هویتی اعضا، نشانی و کدپستی، نام‌های پیشنهادی، موضوع فعالیت، سرمایه و سمت اعضا بررسی می‌شود. فهرست دقیق مدارک پس از مشخص‌شدن نوع شرکت و مقررات روز اعلام خواهد شد.'),
+        array('question' => 'شرکت با مسئولیت محدود بهتر است یا سهامی خاص؟', 'answer' => 'انتخاب بین این دو قالب به ساختار شرکا، نحوه تأمین سرمایه، مسئولیت اعضا، موضوع فعالیت و برنامه آینده کسب‌وکار بستگی دارد. پیش از انتخاب، شرایط خود را بررسی کنید.'),
+        array('question' => 'هزینه ثبت شرکت چقدر است؟', 'answer' => 'هزینه نهایی به نوع شرکت، هزینه‌های قانونی و ثبتی، آگهی‌ها و خدمات موردنیاز پرونده وابسته است. برای اعلام برآورد دقیق، ابتدا باید اطلاعات پرونده بررسی شود.'),
+        array('question' => 'ثبت شرکت چقدر زمان می‌برد؟', 'answer' => 'مدت انجام فرایند به نوع شرکت، کامل‌بودن مدارک، بررسی نام و وضعیت رسیدگی مرجع ثبت بستگی دارد؛ بنابراین بدون بررسی پرونده نمی‌توان زمان قطعی اعلام کرد.'),
+    );
+}
 $ks_description = has_excerpt($ks_post_id) ? get_the_excerpt($ks_post_id) : 'خدمات ثبت شرکت در ایران با راهنمایی مرحله‌به‌مرحله کارثبت؛ بررسی شرایط، انتخاب نوع شرکت، آماده‌سازی مدارک و پیگیری فرایند ثبت. برای دریافت مشاوره از طریق تماس یا پیام‌رسان‌ها ارتباط بگیرید.';
 get_header();
 ?>
@@ -32,6 +41,9 @@ get_header();
 <div class="ks-onepage__actions">
 <?php if ($ks_phone_link) : ?><a class="ks-onepage__button ks-onepage__button--primary" href="tel:<?php echo esc_attr($ks_phone_link); ?>">تماس و دریافت مشاوره</a><?php endif; ?>
 <?php if ($ks_whatsapp) : ?><a class="ks-onepage__button ks-onepage__button--whatsapp" href="<?php echo esc_url($ks_whatsapp); ?>" target="_blank" rel="noopener noreferrer">پیام در واتساپ</a><?php endif; ?>
+<?php if (!$ks_whatsapp && $ks_telegram) : ?><a class="ks-onepage__button ks-onepage__button--whatsapp" href="<?php echo esc_url($ks_telegram); ?>" target="_blank" rel="noopener noreferrer">پیام در تلگرام</a><?php endif; ?>
+<?php if (!$ks_whatsapp && !$ks_telegram && $ks_rubika) : ?><a class="ks-onepage__button ks-onepage__button--whatsapp" href="<?php echo esc_url($ks_rubika); ?>" target="_blank" rel="noopener noreferrer">پیام در روبیکا</a><?php endif; ?>
+<?php if (!$ks_whatsapp && !$ks_telegram && !$ks_rubika && $ks_eitaa) : ?><a class="ks-onepage__button ks-onepage__button--whatsapp" href="<?php echo esc_url($ks_eitaa); ?>" target="_blank" rel="noopener noreferrer">پیام در ایتا</a><?php endif; ?>
 <?php if (!$ks_phone_link && !$ks_whatsapp && !$ks_telegram && !$ks_rubika && !$ks_eitaa) : ?><a class="ks-onepage__button ks-onepage__button--primary" href="#ks-contact">راه‌های ارتباطی</a><?php endif; ?>
 </div><p class="ks-onepage__microcopy">بدون فرم اینترنتی؛ ارتباط مستقیم از طریق تماس و پیام‌رسان‌ها</p></div>
 <div class="ks-onepage__hero-visual" aria-hidden="true"><div class="ks-onepage__visual-orbit"></div><div class="ks-onepage__document"><div class="ks-onepage__doc-top"><span></span><span></span><span></span></div><div class="ks-onepage__doc-seal">✓</div><b>مسیر ثبت شرکت</b><i></i><i></i><i></i><div class="ks-onepage__doc-stamp">KARSABT</div></div><div class="ks-onepage__floating ks-onepage__floating--one">مدارک و مراحل</div><div class="ks-onepage__floating ks-onepage__floating--two">همراهی تا ثبت</div></div>
