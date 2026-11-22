@@ -16,7 +16,7 @@ $checks = array(
  'بخش‌های محتوایی سئو محور وجود دارند' => strpos($source, 'ثبت شرکت در ایران') !== false && strpos($source, 'مراحل ثبت شرکت') !== false && strpos($source, 'چه اطلاعاتی لازم است') !== false,
  'داده ساختاریافته خدمت تولید می‌شود' => strpos($source, "'@type' => 'Service'") !== false && strpos($source, 'application/ld+json') !== false,
  'پرسش‌های متداول و اسکیما پشتیبانی می‌شوند' => strpos($source, '_karsabt_service_faq') !== false && strpos($source, "'@type' => 'FAQPage'") !== false,
- 'طراحی موبایل‌محور و نوار تماس ثابت وجود دارد' => strpos($css, '@media(max-width:680px)') !== false && strpos($css, 'ks-onepage__contact-actions') !== false,
+ 'طراحی موبایل‌محور و نوار تماس ثابت وجود دارد' => strpos($css, '@media(max-width:680px)') !== false && strpos($css, 'ks-onepage__mobile-bar') !== false && strpos($source, 'ks-onepage__mobile-bar') !== false,
  'راهنمای فارسی لندینگ موجود است' => is_file($theme . '/docs/LANDING-PAGES-FA.md'),
 );
 $failed = array();
