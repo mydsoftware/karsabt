@@ -112,3 +112,50 @@ function karsabt_service_meta_save($post_id) {
     update_post_meta($post_id, '_karsabt_service_popular', isset($_POST['karsabt_service_popular']) ? '1' : '0');
 }
 add_action('save_post_karsabt_service', 'karsabt_service_meta_save');
+
+/** ثبت سفارش‌های مشتریان (ذخیره امن در پیشخوان) */
+function karsabt_register_order_post_type() {
+    register_post_type('karsabt_order', array(
+        'labels'=>array('name'=>'سفارش‌ها','singular_name'=>'سفارش','menu_name'=>'سفارش‌ها','edit_item'=>'مشاهده سفارش'),
+        'public'=>false,'show_ui'=>true,'show_in_menu'=>true,'show_in_rest'=>false,
+        'supports'=>array('title'),'capability_type'=>'post','map_meta_cap'=>true,
+        'menu_icon'=>'dashicons-clipboard'
+    ));
+}
+add_action('init','karsabt_register_order_post_type');
+
+function karsabt_order_details_box() {
+    add_meta_box('karsabt_order_info','اطلاعات مشتری و سفارش','karsabt_order_details_render','karsabt_order','normal','high');
+}
+add_action('add_meta_boxes_karsabt_order','karsabt_order_details_box');
+function karsabt_order_details_render($post) {
+    $fields=array('نام مشتری'=>'_karsabt_customer_name','شماره تماس'=>'_karsabt_customer_phone','خدمت'=>'_karsabt_order_service','شرح درخواست'=>'_karsabt_order_message','شناسه سفارش'=>'_karsabt_order_code','زمان ثبت'=>'_karsabt_order_time');
+    echo '<table class="widefat striped"><tbody>';
+    foreach($fields as $label=>$meta){$value=get_post_meta($post->ID,$meta,true);echo '<tr><th style="width:180px">'.esc_html($label).'</th><td>'.nl2br(esc_html($value)).'</td></tr>';}
+    echo '</tbody></table>';
+}
+
+function karsabt_order_submit() {
+    if(!isset($_POST['karsabt_order_nonce'])||!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['karsabt_order_nonce'])),'karsabt_order_submit')) wp_die('درخواست نامعتبر است.');
+    if(!empty($_POST['karsabt_website'])) wp_die('درخواست پذیرفته نشد.');
+    $name=isset($_POST['karsabt_customer_name'])?sanitize_text_field(wp_unslash($_POST['karsabt_customer_name'])):'';
+    $phone=isset($_POST['karsabt_customer_phone'])?sanitize_text_field(wp_unslash($_POST['karsabt_customer_phone'])):'';
+    $message=isset($_POST['karsabt_customer_message'])?sanitize_textarea_field(wp_unslash($_POST['karsabt_customer_message'])):'';
+    $service_id=isset($_POST['karsabt_service_id'])?absint($_POST['karsabt_service_id']):0;
+    if(mb_strlen($name)<2||mb_strlen($phone)<7||!$service_id||get_post_type($service_id)!=='karsabt_service') wp_die('اطلاعات واردشده کامل یا معتبر نیست. لطفاً بازگشته و فرم را بررسی کنید.');
+    $service_title=get_the_title($service_id);
+    $code='KS-'.gmdate('ymd').'-'.wp_rand(1000,9999);
+    $order_id=wp_insert_post(array('post_type'=>'karsabt_order','post_status'=>'publish','post_title'=>$code.' | '.$name,'post_content'=>''),true);
+    if(is_wp_error($order_id)||!$order_id) wp_die('ثبت سفارش انجام نشد. لطفاً دوباره تلاش کنید.');
+    update_post_meta($order_id,'_karsabt_customer_name',$name);
+    update_post_meta($order_id,'_karsabt_customer_phone',$phone);
+    update_post_meta($order_id,'_karsabt_order_service',$service_title);
+    update_post_meta($order_id,'_karsabt_order_message',$message);
+    update_post_meta($order_id,'_karsabt_order_code',$code);
+    update_post_meta($order_id,'_karsabt_order_time',current_time('mysql'));
+    wp_mail(get_option('admin_email'),'سفارش جدید کارثبت: '.$code,"سفارش جدید ثبت شد\nنام: {$name}\nشماره تماس: {$phone}\nخدمت: {$service_title}\nشرح: {$message}");
+    $redirect=add_query_arg('order_submitted','1',get_permalink($service_id));
+    wp_safe_redirect($redirect);exit;
+}
+add_action('admin_post_nopriv_karsabt_order_submit','karsabt_order_submit');
+add_action('admin_post_karsabt_order_submit','karsabt_order_submit');
