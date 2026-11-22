@@ -147,6 +147,8 @@ function karsabt_order_submit() {
     $code='KS-'.gmdate('ymd').'-'.wp_rand(1000,9999);
     $order_id=wp_insert_post(array('post_type'=>'karsabt_order','post_status'=>'karsabt_new','post_title'=>$code.' | '.$name,'post_content'=>''),true);
     if(is_wp_error($order_id)||!$order_id) wp_die('ثبت سفارش انجام نشد. لطفاً دوباره تلاش کنید.');
+    $customer_id=karsabt_find_or_create_customer($name,$phone);
+    if($customer_id) update_post_meta($order_id,'_karsabt_customer_id',$customer_id);
     update_post_meta($order_id,'_karsabt_customer_name',$name);
     update_post_meta($order_id,'_karsabt_customer_phone',$phone);
     update_post_meta($order_id,'_karsabt_order_service',$service_title);
@@ -257,3 +259,100 @@ function karsabt_order_status_filter_query($query) {
     }
 }
 add_action('pre_get_posts','karsabt_order_status_filter_query');
+
+
+/** مدیریت پرونده مشتریان (CRM سبک) */
+function karsabt_register_customer_post_type() {
+    register_post_type('karsabt_customer',array(
+        'labels'=>array('name'=>'مشتریان','singular_name'=>'مشتری','menu_name'=>'مشتریان','add_new'=>'مشتری جدید','edit_item'=>'پرونده مشتری'),
+        'public'=>false,'show_ui'=>true,'show_in_menu'=>true,'show_in_rest'=>false,
+        'supports'=>array('title'),'capability_type'=>'post','map_meta_cap'=>true,
+        'menu_icon'=>'dashicons-groups'
+    ));
+}
+add_action('init','karsabt_register_customer_post_type');
+
+/** شماره تماس را برای تطبیق به شکل یکسان تبدیل می‌کند */
+function karsabt_normalize_phone($phone) {
+    $phone=preg_replace('/[^0-9+]/','',(string)$phone);
+    if(substr($phone,0,2)==='98') $phone='0'.substr($phone,2);
+    if(substr($phone,0,3)==='+98') $phone='0'.substr($phone,3);
+    return $phone;
+}
+
+/** پیدا کردن مشتری با تلفن یا ایجاد پرونده جدید */
+function karsabt_find_or_create_customer($name,$phone) {
+    $normalized=karsabt_normalize_phone($phone);
+    $query=new WP_Query(array('post_type'=>'karsabt_customer','post_status'=>'publish','posts_per_page'=>1,'fields'=>'ids','meta_query'=>array(array('key'=>'_karsabt_customer_phone_normalized','value'=>$normalized))));
+    if(!empty($query->posts)) {
+        $id=(int)$query->posts[0];
+        update_post_meta($id,'_karsabt_customer_phone',$phone);
+        update_post_meta($id,'_karsabt_customer_name',$name);
+        wp_update_post(array('ID'=>$id,'post_title'=>$name.' | '.$phone));
+        return $id;
+    }
+    $id=wp_insert_post(array('post_type'=>'karsabt_customer','post_status'=>'publish','post_title'=>$name.' | '.$phone),true);
+    if(is_wp_error($id)||!$id) return 0;
+    update_post_meta($id,'_karsabt_customer_name',$name);
+    update_post_meta($id,'_karsabt_customer_phone',$phone);
+    update_post_meta($id,'_karsabt_customer_phone_normalized',$normalized);
+    update_post_meta($id,'_karsabt_customer_created',current_time('mysql'));
+    return (int)$id;
+}
+
+/** باکس پرونده مشتری و سفارش‌های مرتبط */
+function karsabt_customer_profile_box() {
+    add_meta_box('karsabt_customer_profile','اطلاعات مشتری و سوابق سفارش','karsabt_customer_profile_render','karsabt_customer','normal','high');
+}
+add_action('add_meta_boxes_karsabt_customer','karsabt_customer_profile_box');
+function karsabt_customer_profile_render($post) {
+    $name=get_post_meta($post->ID,'_karsabt_customer_name',true);
+    $phone=get_post_meta($post->ID,'_karsabt_customer_phone',true);
+    $tel=preg_replace('/[^0-9+]/','',$phone);
+    echo '<p><strong>نام:</strong> '.esc_html($name).'</p>';
+    echo '<p><strong>تماس:</strong> <a href="tel:'.esc_attr($tel).'">'.esc_html($phone).'</a></p>';
+    echo '<p><a class="button button-primary" href="tel:'.esc_attr($tel).'">تماس با مشتری</a></p>';
+    $orders=new WP_Query(array('post_type'=>'karsabt_order','post_status'=>array('karsabt_new','karsabt_processing','karsabt_completed','karsabt_cancelled','publish'),'posts_per_page'=>-1,'orderby'=>'date','order'=>'DESC','meta_query'=>array(array('key'=>'_karsabt_customer_id','value'=>$post->ID))));
+    echo '<h3>سوابق سفارش ('.intval($orders->found_posts).')</h3>';
+    if($orders->have_posts()) {
+        echo '<table class="widefat striped"><thead><tr><th>کد</th><th>خدمت</th><th>وضعیت</th><th>تاریخ</th></tr></thead><tbody>';
+        $status_labels=array('karsabt_new'=>'جدید','karsabt_processing'=>'در حال انجام','karsabt_completed'=>'تکمیل شده','karsabt_cancelled'=>'لغو شده','publish'=>'ثبت شده');
+        while($orders->have_posts()) {
+            $orders->the_post();
+            $oid=get_the_ID();
+            $code=get_post_meta($oid,'_karsabt_order_code',true);
+            $service=get_post_meta($oid,'_karsabt_order_service',true);
+            $status=get_post_status($oid);
+            $date=get_post_meta($oid,'_karsabt_order_time',true);
+            echo '<tr><td><a href="'.esc_url(get_edit_post_link($oid)).'">'.esc_html($code).'</a></td><td>'.esc_html($service).'</td><td>'.esc_html(isset($status_labels[$status])?$status_labels[$status]:$status).'</td><td>'.esc_html($date).'</td></tr>';
+        }
+        echo '</tbody></table>';
+        wp_reset_postdata();
+    } else echo '<p>هنوز سفارشی برای این مشتری ثبت نشده است.</p>';
+}
+
+/** ستون‌های فهرست مشتریان */
+function karsabt_customer_columns($columns) {
+    return array('cb'=>isset($columns['cb'])?$columns['cb']:'<input type="checkbox" />','title'=>'مشتری','karsabt_customer_phone'=>'شماره تماس','karsabt_customer_orders'=>'تعداد سفارش','date'=>'تاریخ ایجاد');
+}
+add_filter('manage_karsabt_customer_posts_columns','karsabt_customer_columns');
+function karsabt_customer_column_content($column,$post_id) {
+    if($column==='karsabt_customer_phone') {
+        $phone=get_post_meta($post_id,'_karsabt_customer_phone',true);
+        $tel=preg_replace('/[^0-9+]/','',$phone);
+        echo '<a href="tel:'.esc_attr($tel).'">'.esc_html($phone).'</a>';
+    } elseif($column==='karsabt_customer_orders') {
+        $q=new WP_Query(array('post_type'=>'karsabt_order','post_status'=>array('karsabt_new','karsabt_processing','karsabt_completed','karsabt_cancelled','publish'),'posts_per_page'=>-1,'fields'=>'ids','meta_query'=>array(array('key'=>'_karsabt_customer_id','value'=>$post_id))));
+        echo intval(count($q->posts));
+    }
+}
+add_action('manage_karsabt_customer_posts_custom_column','karsabt_customer_column_content',10,2);
+
+/** جستجو در مشتریان با نام و شماره */
+function karsabt_customer_admin_search($query) {
+    if(!is_admin()||!$query->is_main_query()||$query->get('post_type')!=='karsabt_customer') return;
+    if(empty($_GET['s'])) return;
+    $term=sanitize_text_field(wp_unslash($_GET['s']));
+    $query->set('meta_query',array('relation'=>'OR',array('key'=>'_karsabt_customer_phone','value'=>$term,'compare'=>'LIKE'),array('key'=>'_karsabt_customer_name','value'=>$term,'compare'=>'LIKE')));
+}
+add_action('pre_get_posts','karsabt_customer_admin_search');
