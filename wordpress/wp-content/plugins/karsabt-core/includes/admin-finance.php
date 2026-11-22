@@ -209,7 +209,8 @@ function karsabt_finance_render_payments() {
             }
         }
     }
-    $invoices = get_posts(array('post_type' => 'karsabt_invoice, 'post_status' => 'private', 'posts_per_page' => 200, 'orderby' => 'date', 'order' => 'DESC'));
+        }
+    $invoices = get_posts(array('post_type' => 'karsabt_invoice', 'post_status' => 'private', 'posts_per_page' => 200, 'orderby' => 'date', 'order' => 'DESC'));
     echo '<div class="wrap"><h1>ثبت پرداخت</h1>' . $notice . '<form method="post">';
     wp_nonce_field('karsabt_record_payment');
     echo '<table class="form-table"><tr><th><label for="karsabt-payment-invoice">فاکتور</label></th><td><select id="karsabt-payment-invoice" name="invoice_id" required><option value="">انتخاب فاکتور دارای مانده</option>';
