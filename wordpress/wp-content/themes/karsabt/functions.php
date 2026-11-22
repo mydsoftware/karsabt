@@ -145,7 +145,7 @@ function karsabt_order_submit() {
     if(mb_strlen($name)<2||mb_strlen($phone)<7||!$service_id||get_post_type($service_id)!=='karsabt_service') wp_die('اطلاعات واردشده کامل یا معتبر نیست. لطفاً بازگشته و فرم را بررسی کنید.');
     $service_title=get_the_title($service_id);
     $code='KS-'.gmdate('ymd').'-'.wp_rand(1000,9999);
-    $order_id=wp_insert_post(array('post_type'=>'karsabt_order','post_status'=>'publish','post_title'=>$code.' | '.$name,'post_content'=>''),true);
+    $order_id=wp_insert_post(array('post_type'=>'karsabt_order','post_status'=>'karsabt_new','post_title'=>$code.' | '.$name,'post_content'=>''),true);
     if(is_wp_error($order_id)||!$order_id) wp_die('ثبت سفارش انجام نشد. لطفاً دوباره تلاش کنید.');
     update_post_meta($order_id,'_karsabt_customer_name',$name);
     update_post_meta($order_id,'_karsabt_customer_phone',$phone);
