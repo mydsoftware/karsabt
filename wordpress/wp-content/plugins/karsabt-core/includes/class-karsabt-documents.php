@@ -276,8 +276,8 @@ function karsabt_docs_download_handler() {
     header('Content-Disposition: attachment; filename="document.' . pathinfo($path, PATHINFO_EXTENSION) . '"');
     readfile($path); exit;
 }
+// دریافت مدارک فقط برای کاربران واردشده و پس از کنترل مالکیت سفارش مجاز است.
 add_action('admin_post_karsabt_document_download', 'karsabt_docs_download_handler');
-add_action('admin_post_nopriv_karsabt_document_download', 'karsabt_docs_download_handler');
 
 function karsabt_docs_admin_page() {
     if (!current_user_can('manage_options')) { wp_die('دسترسی مجاز نیست.'); }

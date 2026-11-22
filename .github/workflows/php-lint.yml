@@ -1,4 +1,4 @@
-name: بررسی نحو PHP
+name: بررسی نحو PHP و آزمون‌های امنیتی
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - main
       - 'feature/**'
       - 'fix/**'
+      - 'security/**'
   pull_request:
 
 jobs:

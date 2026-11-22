@@ -2,14 +2,17 @@ name: Karsabt Theme Quality
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'security/**']
     paths:
       - "wordpress/wp-content/themes/karsabt/**"
+      - "wordpress/wp-content/plugins/karsabt-core/**"
       - ".github/workflows/karsabt-theme-quality.yml"
       - "tests/php/karsabt-theme-quality-test.php"
   pull_request:
     paths:
       - "wordpress/wp-content/themes/karsabt/**"
+      - "wordpress/wp-content/plugins/karsabt-core/**"
+      - "tests/php/karsabt-theme-quality-test.php"
       - ".github/workflows/karsabt-theme-quality.yml"
   workflow_dispatch:
 
