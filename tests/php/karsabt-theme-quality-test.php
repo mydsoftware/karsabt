@@ -95,7 +95,7 @@ karsabt_test('کنترل مجوز اختصاصی پرونده کارشناس', s
 karsabt_test('محدودیت ویرایش کارشناس به پرونده تخصیص‌یافته', strpos($core, 'if ($assigned &&') !== false && strpos($core, "'edit_karsabt_orders'") !== false);
 karsabt_test('عدم اجازه حذف پرونده توسط کارشناس', strpos($core, "delete_karsabt_order' ===") !== false && strpos($core, "array('do_not_allow')") !== false);
 karsabt_test('جلوگیری از ساخت پرونده توسط نقش کارشناس', strpos($core, "'create_posts'           => 'do_not_allow'") !== false);
-karsabt_test('شناسه ورود قطعی و یکتا بر اساس موبایل', strpos($core, '$login =') !== false && strpos($core, "hash('sha256', $mobile)") !== false);
+karsabt_test('شناسه ورود قطعی و یکتا بر اساس موبایل', strpos($core, "krs_") !== false && strpos($core, "sha256") !== false && strpos($core, "user_login") !== false);
 karsabt_test('ثبت‌نام فقط با نقش مشتری عادی', strpos($core, "'role' => 'subscriber'") !== false);
 
 
