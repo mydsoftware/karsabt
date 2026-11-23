@@ -1,6 +1,7 @@
 Options -Indexes -MultiViews
 DirectoryIndex index.php
 RewriteEngine On
+
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
 
 # Friendly article URLs
@@ -8,7 +9,7 @@ RewriteRule ^maghale/?$ articles-index.php [L,QSA]
 RewriteRule ^maghale/([a-z0-9-]+)/?$ article.php?slug=$1 [L,QSA]
 
 # Prevent direct access to sensitive project files
-<FilesMatch "^(config\.php|articles\.php|CHANGELOG-FA\.md|README-FA\.md|INSTALL-FA\.md|\.user\.ini)$">
+<FilesMatch "^(config\.php|articles\.php|CHANGELOG-FA\.md|README-FA\.md|INSTALL-FA\.md|AI-FA\.md|SEO-FA\.md|\.user\.ini)$">
   Require all denied
 </FilesMatch>
 <FilesMatch "^(\.env|composer\.(json|lock)|package(-lock)?\.json|.*\.bak|.*\.sql|.*\.log)$">
@@ -41,7 +42,7 @@ ErrorDocument 404 /404.php
   ExpiresByType image/svg+xml "access plus 30 days"
 </IfModule>
 
-# Protect database and runtime storage; block installer from web access
+# Protect storage; block installer from web access
 RewriteRule ^storage/ - [F,L,NC]
 <Files "setup-admin.php">
   Require all denied
