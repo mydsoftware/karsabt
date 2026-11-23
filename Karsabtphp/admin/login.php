@@ -1,0 +1,6 @@
+<?php
+require __DIR__.'/common.php';
+if (!empty($_SESSION['admin_id'])) { header('Location: /admin/'); exit; }
+$error='';
+if ($_SERVER['REQUEST_METHOD']==='POST') { admin_verify_csrf(); if(admin_login_locked()){$error='تلاش‌های ورود بیش از حد بوده؛ ۱۵ دقیقه بعد دوباره تلاش کنید.';} else { $q=$pdo->prepare('SELECT id,password_hash FROM admins WHERE username=? LIMIT 1'); $q->execute([trim($_POST['username']??'')]); $u=$q->fetch(); if ($u && password_verify((string)($_POST['password']??''),$u['password_hash'])) { admin_login_record(true); session_regenerate_id(true); $_SESSION['admin_id']=$u['id']; $_SESSION['last_activity']=time(); $_SESSION['csrf']=bin2hex(random_bytes(32)); header('Location: /admin/'); exit; } admin_login_record(false); $error='نام کاربری یا گذرواژه نادرست است.'; } }
+admin_header('ورود مدیر'); ?><section class="card"><p style="color:#b91c1c"><?=admin_e($error)?></p><?php if(isset($_GET['expired'])): ?><p>به دلیل عدم فعالیت، نشست شما منقضی شد.</p><?php endif?><form method="post"><input type="hidden" name="csrf" value="<?=admin_e(admin_csrf())?>"><label>نام کاربری</label><input name="username" autocomplete="username" required><label>گذرواژه</label><input type="password" name="password" autocomplete="current-password" required><button>ورود</button></form></section></main></html>
