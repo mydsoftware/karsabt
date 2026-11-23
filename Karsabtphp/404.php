@@ -1,7 +1,6 @@
 <?php
 http_response_code(404);
-$config = require __DIR__ . '/config.php';
-require __DIR__ . '/includes/functions.php';
+require __DIR__ . '/includes/bootstrap.php';
 $contact = contact_links();
 ?>
 <!doctype html>
