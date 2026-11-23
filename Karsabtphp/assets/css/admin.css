@@ -1,0 +1,161 @@
+/* پنل مدیریت کارثبت — رابط مدرن RTL */
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --admin-bg: #f0f4f7;
+  --admin-surface: #ffffff;
+  --admin-navy: #0d2239;
+  --admin-teal: #0e9eab;
+  --admin-teal-dark: #0b8590;
+  --admin-ink: #1a2f3f;
+  --admin-muted: #64788a;
+  --admin-line: #dce5ec;
+  --admin-danger: #b42318;
+  --admin-radius: 14px;
+  --admin-shadow: 0 8px 28px rgba(13, 34, 57, 0.06);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Vazirmatn, Tahoma, Arial, sans-serif;
+  background: var(--admin-bg);
+  color: var(--admin-ink);
+  line-height: 1.8;
+}
+
+main {
+  max-width: 980px;
+  margin: 28px auto 48px;
+  padding: 0 16px;
+}
+
+nav.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 4px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow);
+  font-size: 13.5px;
+}
+
+nav.admin-nav a {
+  color: var(--admin-teal);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background .15s ease, color .15s ease;
+}
+
+nav.admin-nav a:hover {
+  background: #e8f6f8;
+  color: var(--admin-teal-dark);
+}
+
+h1 {
+  font-size: 1.55rem;
+  color: var(--admin-navy);
+  margin: 0 0 18px;
+  font-weight: 800;
+}
+
+.card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-line);
+  border-radius: var(--admin-radius);
+  padding: 22px;
+  margin: 14px 0;
+  box-shadow: var(--admin-shadow);
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+  color: var(--admin-navy);
+}
+
+label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-top: 4px;
+}
+
+input, textarea, select, button, .btn {
+  font: inherit;
+  padding: 11px 14px;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+input, textarea, select {
+  width: 100%;
+  margin: 6px 0 14px;
+  background: #fafcfd;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--admin-teal);
+  box-shadow: 0 0 0 3px rgba(14, 158, 171, 0.18);
+  background: #fff;
+}
+
+button, .btn {
+  background: var(--admin-teal);
+  color: #fff;
+  border: 0;
+  padding: 11px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  font-weight: 700;
+  transition: background .15s ease, transform .1s ease;
+}
+
+button:hover, .btn:hover {
+  background: var(--admin-teal-dark);
+}
+
+button:active, .btn:active {
+  transform: translateY(1px);
+}
+
+button[style*="background:#b42318"],
+button.danger {
+  background: var(--admin-danger) !important;
+}
+
+.muted { color: var(--admin-muted); font-size: 0.92rem; }
+
+a { color: var(--admin-teal); }
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.row > * { flex: 1; min-width: 180px; }
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--admin-line);
+  margin: 18px 0;
+}
+
+@media (max-width: 640px) {
+  main { margin-top: 16px; }
+  nav.admin-nav { font-size: 12.5px; gap: 4px; }
+  h1 { font-size: 1.3rem; }
+}
