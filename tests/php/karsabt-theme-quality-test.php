@@ -115,8 +115,8 @@ karsabt_test('محدودیت تعداد پیام هر پرونده', strpos($mes
 karsabt_test('قفل دیتابیس برای جلوگیری از بازنویسی پیام‌های هم‌زمان', strpos($messages, 'SELECT GET_LOCK') !== false && strpos($messages, 'SELECT RELEASE_LOCK') !== false);
 karsabt_test('هر دو مسیر ارسال مشتری و مدیر از قفل گفت‌وگو استفاده می‌کنند', substr_count($messages, 'karsabt_messages_lock($order_id)') >= 2);
 karsabt_test('قفل گفت‌وگو پس از ذخیره پیام آزاد می‌شود', substr_count($messages, 'karsabt_messages_unlock($lock_name)') >= 2);
-karsabt_test('پنل پیام‌های مدیریتی فقط برای مدیر', strpos($messages, "current_user_can('manage_options')") !== false);
-karsabt_test('امور مالی فقط برای مدیر قابل دسترسی است', substr_count($finance, "current_user_can('manage_options')") >= 3);
+karsabt_test('پنل پیام‌های مدیریتی فقط برای مدیر', strpos($messages, "current_user_can('manage_karsabt_messages')") !== false);
+karsabt_test('امور مالی فقط برای مدیر قابل دسترسی است', substr_count($finance, "current_user_can('manage_karsabt_finance')") >= 3);
 karsabt_test('ممانعت از پرداخت بیشتر از مانده فاکتور', strpos($finance, '$amount > ($total - $paid)') !== false);
 karsabt_test('قفل تراکنشی ثبت پرداخت هم‌زمان', strpos($finance, "FOR UPDATE") !== false && strpos($finance, "START TRANSACTION") !== false && strpos($finance, "COMMIT") !== false && strpos($finance, "ROLLBACK") !== false);
 karsabt_test('جدول پرداخت‌ها با موتور تراکنشی InnoDB ساخته می‌شود', strpos($finance, 'ENGINE=InnoDB') !== false);
@@ -125,9 +125,9 @@ karsabt_test('نمایش فاکتور فقط به مالک حساب', strpos($fi
 
 
 
-karsabt_test('الگوی صفحه فرود کمپین', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'ks-landing-request') !== false);
-karsabt_test('فرم سفارش در صفحه فرود', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), '[karsabt_order_form]') !== false);
-karsabt_test('راهنمای صفحات فرود', is_file($theme . '/docs/LANDING-PAGES-FA.md'));
+karsabt_test('الگوی صفحه فرود تک‌صفحه‌ای', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'ks-onepage') !== false);
+karsabt_test('ارتباط مستقیم بدون فرم اینترنتی در صفحه فرود', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'بدون فرم اینترنتی') !== false);
+karsabt_test('تعریف قالب صفحه فرود در سربرگ فایل', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'Template Name:') !== false);
 
 
 karsabt_test('قالب درباره ما', is_file($theme . '/page-templates/about.php'));
@@ -144,9 +144,9 @@ $services_template = (string) file_get_contents($theme . '/page-templates/servic
 $detail_template = (string) file_get_contents($theme . '/page-templates/service-detail.php');
 $theme_js = (string) file_get_contents($theme . '/assets/js/theme.js');
 
-karsabt_test('عنوان صفحه فرود با محتوای وردپرس نمایش داده می‌شود', strpos($landing, 'the_title()') !== false);
-karsabt_test('محتوای صفحه فرود در قالب entry-content', strpos($landing, 'the_content()') !== false && strpos($landing, 'entry-content') !== false);
-karsabt_test('FAQ صفحه فرود با خروجی امن', strpos($landing, 'esc_html($faq[\'question\'])') !== false && strpos($landing, 'wpautop(esc_html($faq[\'answer\']))') !== false);
+karsabt_test('عنوان صفحه فرود از عنوان برگه وردپرس خوانده می‌شود', strpos($landing, 'get_the_title($ks_post_id)') !== false);
+karsabt_test('توضیح صفحه فرود از خلاصه قابل ویرایش وردپرس استفاده می‌کند', strpos($landing, 'get_the_excerpt($ks_post_id)') !== false);
+karsabt_test('FAQ صفحه فرود با خروجی امن', strpos($landing, 'esc_html($ks_faq[\'question\'])') !== false && strpos($landing, 'wpautop(esc_html($ks_faq[\'answer\']))') !== false);
 karsabt_test('صفحه درباره شامل محتوای ویرایش‌پذیر است', strpos($about, 'the_content()') !== false);
 karsabt_test('لینک تلفن در صفحه تماس امن‌سازی شده', strpos($contact, 'esc_url(\'tel:\' . preg_replace') !== false && strpos($contact, 'esc_html($phone)') !== false);
 karsabt_test('صفحه تعرفه استعلام خدمت را در لینک منتقل می‌کند', strpos($pricing, 'add_query_arg') !== false && strpos($pricing, "'service'") !== false);
@@ -154,7 +154,7 @@ karsabt_test('بسته‌سازی قالب بدون پوشه گیت و تست', 
 
 karsabt_test('لینک خدمات از کلیدهای معتبر فرم سفارش استفاده می‌کند', strpos($services_template, "'company'") !== false && strpos($services_template, "'trademark'") !== false && strpos($services_template, "'home_business'") !== false && strpos($services_template, "'business'") !== false);
 karsabt_test('پیش‌انتخاب خدمت از پارامتر URL', strpos($theme_js, 'URLSearchParams(window.location.search)') !== false && strpos($theme_js, 'serviceSelect.value = serviceParam') !== false);
-karsabt_test('صفحه جزئیات خدمت از کلید استاندارد فرم استفاده می‌کند', strpos($detail_template, '$karsabt_service_key') !== false && strpos($detail_template, "'ثبت شرکت' => 'company'") !== false && strpos($detail_template, "add_query_arg('service', $karsabt_service_key") !== false);
+karsabt_test('صفحه جزئیات خدمت از کلید استاندارد فرم استفاده می‌کند', strpos($detail_template, '$karsabt_service_key') !== false && strpos($detail_template, "'ثبت شرکت' => 'company'") !== false && strpos($detail_template, "add_query_arg('service', \$karsabt_service_key") !== false);
 karsabt_test('لینک داخلی دایرکتوری به صفحه جزئیات منتشرشده', strpos($services_template, 'get_page_by_path') !== false && strpos($services_template, 'مشاهده جزئیات') !== false);
 
 $failed = array();

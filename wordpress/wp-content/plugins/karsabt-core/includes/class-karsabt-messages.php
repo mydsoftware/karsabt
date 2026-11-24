@@ -93,6 +93,8 @@ function karsabt_messages_customer_submit() {
     }
     $lock_name = karsabt_messages_lock($order_id);
     if (!$lock_name) { wp_die('گفت‌وگو در حال به‌روزرسانی است؛ چند لحظه دیگر دوباره تلاش کنید.', '', array('response' => 503)); }
+    // هر worker PHP ممکن است cache محلی قدیمی داشته باشد؛ پس از قفل، متادیتا را از DB تازه بخوان.
+    wp_cache_delete($order_id, 'post_meta');
     $messages = karsabt_messages_get($order_id);
     if (count($messages) >= 200) {
         karsabt_messages_unlock($lock_name);
@@ -116,7 +118,7 @@ function karsabt_messages_customer_submit() {
 add_action('admin_post_karsabt_customer_message', 'karsabt_messages_customer_submit');
 
 function karsabt_messages_admin_page() {
-    if (!current_user_can('manage_options')) { wp_die('دسترسی مجاز نیست.'); }
+    if (!current_user_can('manage_karsabt_messages')) { wp_die('دسترسی مجاز نیست.'); }
     $notice = '';
     if ('POST' === strtoupper($_SERVER['REQUEST_METHOD'] ?? '') && isset($_POST['karsabt_admin_message_submit'])) {
         check_admin_referer('karsabt_admin_message');
@@ -129,6 +131,8 @@ function karsabt_messages_admin_page() {
             if (!$lock_name) {
                 $notice = '<div class="notice notice-error"><p>گفت‌وگو در حال به‌روزرسانی است؛ دوباره تلاش کنید.</p></div>';
             } else {
+                // هر worker PHP ممکن است cache محلی قدیمی داشته باشد؛ پس از قفل، متادیتا را از DB تازه بخوان.
+                wp_cache_delete($order_id, 'post_meta');
                 $messages = karsabt_messages_get($order_id);
                 if (count($messages) < 200) {
                 $messages[] = array(
@@ -193,7 +197,7 @@ function karsabt_messages_admin_menu() {
         'edit.php?post_type=karsabt_order',
         'پیام‌های مشتریان',
         'پیام‌های مشتریان',
-        'manage_options',
+        'manage_karsabt_messages',
         'karsabt-messages',
         'karsabt_messages_admin_page'
     );
