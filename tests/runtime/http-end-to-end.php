@@ -1,0 +1,231 @@
+<?php
+/**
+ * آزمون HTTP واقعی مسیرهای پیام، پرداخت و مدارک کارثبت.
+ * این فایل باید پس از نصب وردپرس و اجرای PHP built-in server اجرا شود.
+ */
+declare(strict_types=1);
+
+$wpPath = getenv('KARSABT_WP_PATH');
+$baseUrl = rtrim((string) getenv('KARSABT_HTTP_BASE_URL'), '/');
+if (!$wpPath || !is_file($wpPath . '/wp-load.php') || !$baseUrl || !function_exists('curl_init')) {
+    fwrite(STDERR, "محیط آزمون HTTP کامل نیست.\n");
+    exit(1);
+}
+require $wpPath . '/wp-load.php';
+
+$checks = 0;
+$failures = array();
+$assert = static function ($condition, string $label) use (&$checks, &$failures): void {
+    $checks++;
+    if (!$condition) {
+        $failures[] = $label;
+        fwrite(STDERR, "[ناموفق] {$label}\n");
+    } else {
+        fwrite(STDOUT, "[موفق] {$label}\n");
+    }
+};
+$request = static function (string $url, string $jar, string $method = 'GET', array $data = array(), array $files = array()) {
+    $ch = curl_init($url);
+    $options = array(
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HEADER => true,
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_COOKIEJAR => $jar,
+        CURLOPT_COOKIEFILE => $jar,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_CUSTOMREQUEST => $method,
+    );
+    if ('POST' === $method) {
+        $options[CURLOPT_POST] = true;
+        $options[CURLOPT_POSTFIELDS] = $data;
+    }
+    curl_setopt_array($ch, $options);
+    $raw = curl_exec($ch);
+    if (false === $raw) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        throw new RuntimeException('HTTP request failed: ' . $error);
+    }
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    curl_close($ch);
+    return array('status' => $status, 'headers' => substr($raw, 0, $headerSize), 'body' => substr($raw, $headerSize));
+};
+$login = static function (string $username, string $password, string $jar) use ($baseUrl, $request): bool {
+    $loginUrl = $baseUrl . '/wp-login.php';
+    $request($loginUrl, $jar);
+    $response = $request($loginUrl, $jar, 'POST', array(
+        'log' => $username, 'pwd' => $password, 'wp-submit' => 'ورود',
+        'redirect_to' => $baseUrl . '/wp-admin/', 'testcookie' => '1',
+    ));
+    return in_array($response['status'], array(302, 303), true);
+};
+$extract = static function (string $html, string $name): string {
+    if (!preg_match('/<input[^>]+name=["\\']' . preg_quote($name, '/') . '["\\'][^>]+value=["\\']([^"\\']+)["\\']/i', $html, $m)
+        && !preg_match('/<input[^>]+value=["\\']([^"\\']+)["\\'][^>]+name=["\\']' . preg_quote($name, '/') . '["\\']/i', $html, $m)) {
+        return '';
+    }
+    return html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
+};
+$nonce = static function (string $html, string $name) use ($extract): string { return $extract($html, $name); };
+
+$stamp = bin2hex(random_bytes(4));
+$adminPass = 'Karsabt-http-admin-' . bin2hex(random_bytes(8));
+$customerPass = 'Karsabt-http-customer-' . bin2hex(random_bytes(8));
+$otherPass = 'Karsabt-http-other-' . bin2hex(random_bytes(8));
+$adminId = wp_create_user('karsabt-http-admin-' . $stamp, $adminPass, 'http-admin-' . $stamp . '@example.test');
+$customerId = wp_create_user('karsabt-http-customer-' . $stamp, $customerPass, 'http-customer-' . $stamp . '@example.test');
+$otherId = wp_create_user('karsabt-http-other-' . $stamp, $otherPass, 'http-other-' . $stamp . '@example.test');
+if (is_wp_error($adminId) || is_wp_error($customerId) || is_wp_error($otherId)) {
+    throw new RuntimeException('ساخت کاربران آزمون ناموفق بود.');
+}
+(new WP_User($adminId))->set_role('administrator');
+(new WP_User($customerId))->set_role('subscriber');
+(new WP_User($otherId))->set_role('subscriber');
+
+$orderId = wp_insert_post(array('post_type'=>'karsabt_order','post_status'=>'private','post_title'=>'HTTP test '.$stamp), true);
+if (is_wp_error($orderId)) { throw new RuntimeException('ساخت پرونده آزمون ناموفق بود.'); }
+update_post_meta($orderId, '_karsabt_customer_user_id', $customerId);
+update_post_meta($orderId, '_karsabt_customer_name', 'مشتری آزمون HTTP');
+update_post_meta($orderId, '_karsabt_customer_phone', '09120000000');
+update_post_meta($orderId, '_karsabt_service', 'company');
+update_post_meta($orderId, '_karsabt_tracking_code', 'KRS-2611-000001-' . strtoupper(substr($stamp, 0, 4)));
+
+$customerPageId = wp_insert_post(array(
+    'post_type'=>'page','post_status'=>'publish','post_title'=>'Karsabt HTTP Customer '.$stamp,
+    'post_content'=>'[karsabt_customer_messages]\n[karsabt_customer_documents]',
+), true);
+if (is_wp_error($customerPageId)) { throw new RuntimeException('ساخت صفحه مشتری ناموفق بود.'); }
+$customerUrl = get_permalink($customerPageId);
+
+$invoiceId = wp_insert_post(array('post_type'=>'karsabt_invoice','post_status'=>'private','post_title'=>'HTTP invoice '.$stamp), true);
+if (is_wp_error($invoiceId)) { throw new RuntimeException('ساخت فاکتور آزمون ناموفق بود.'); }
+update_post_meta($invoiceId, '_karsabt_invoice_amount', 100);
+update_post_meta($invoiceId, '_karsabt_invoice_number', 'HTTP-' . $stamp);
+update_post_meta($invoiceId, '_karsabt_invoice_customer_user_id', $customerId);
+update_post_meta($invoiceId, '_karsabt_invoice_customer_name', 'مشتری آزمون HTTP');
+update_post_meta($invoiceId, '_karsabt_invoice_description', 'فاکتور آزمون HTTP');
+
+$privateDir = function_exists('karsabt_docs_private_dir') ? karsabt_docs_private_dir() : '';
+$assert(is_string($privateDir) && '' !== $privateDir, 'مسیر ذخیره‌سازی خصوصی خارج از web root فعال است');
+
+$root = sys_get_temp_dir() . '/karsabt-http-' . $stamp;
+if (!wp_mkdir_p($root)) { throw new RuntimeException('ساخت پوشه آزمون ناموفق بود.'); }
+$adminJar = $root . '/admin.cookies';
+$customerJar = $root . '/customer.cookies';
+$otherJar = $root . '/other.cookies';
+$guestJar = $root . '/guest.cookies';
+
+try {
+    $assert($login('karsabt-http-admin-' . $stamp, $adminPass, $adminJar), 'ورود مدیر از مسیر HTTP وردپرس موفق است');
+    $assert($login('karsabt-http-customer-' . $stamp, $customerPass, $customerJar), 'ورود مشتری از مسیر HTTP وردپرس موفق است');
+    $assert($login('karsabt-http-other-' . $stamp, $otherPass, $otherJar), 'ورود مشتری دوم از مسیر HTTP وردپرس موفق است');
+
+    $customerPage = $request($customerUrl, $customerJar);
+    $messageNonce = $nonce($customerPage['body'], 'karsabt_message_nonce');
+    $docsNonce = $nonce($customerPage['body'], 'karsabt_docs_nonce');
+    $assert(200 === $customerPage['status'] && '' !== $messageNonce, 'صفحه مشتری nonce واقعی ارسال پیام را ارائه می‌کند');
+    $assert('' !== $docsNonce, 'صفحه مشتری nonce واقعی بارگذاری مدرک را ارائه می‌کند');
+
+    $messageResponse = $request($baseUrl . '/wp-admin/admin-post.php', $customerJar, 'POST', array(
+        'action'=>'karsabt_customer_message','order_id'=>$orderId,
+        'karsabt_message_nonce'=>$messageNonce,'message'=>'پیام آزمایشی از درخواست HTTP',
+    ));
+    $messages = karsabt_messages_get($orderId);
+    $assert(in_array($messageResponse['status'], array(302,303), true), 'ارسال پیام مشتری از admin-post.php پاسخ هدایت معتبر دارد');
+    $assert(1 === count($messages) && 'پیام آزمایشی از درخواست HTTP' === $messages[0]['text'], 'پیام مشتری از مسیر HTTP در پرونده ذخیره شد');
+
+    $adminMessagesUrl = $baseUrl . '/wp-admin/edit.php?post_type=karsabt_order&page=karsabt-messages';
+    $adminMessagesPage = $request($adminMessagesUrl, $adminJar);
+    $adminMessageNonce = $nonce($adminMessagesPage['body'], '_wpnonce');
+    $assert(200 === $adminMessagesPage['status'] && '' !== $adminMessageNonce, 'مدیر صفحه گفت‌وگو و nonce پاسخ را دریافت می‌کند');
+    $adminReply = $request($adminMessagesUrl, $adminJar, 'POST', array(
+        '_wpnonce'=>$adminMessageNonce,'order_id'=>$orderId,
+        'message'=>'پاسخ مدیر از مسیر HTTP','karsabt_admin_message_submit'=>'1',
+    ));
+    $messages = karsabt_messages_get($orderId);
+    $assert(200 === $adminReply['status'] && false !== strpos($adminReply['body'], 'پاسخ ثبت شد'), 'پاسخ مدیر از فرم واقعی مدیریت ثبت شد');
+    $assert(2 === count($messages) && 'admin' === $messages[1]['sender'], 'پاسخ مدیر در گفت‌وگوی پرونده ذخیره شد');
+
+    $otherPage = $request($customerUrl, $otherJar);
+    $otherNonce = $nonce($otherPage['body'], 'karsabt_message_nonce');
+    $deniedMessage = $request($baseUrl . '/wp-admin/admin-post.php', $otherJar, 'POST', array(
+        'action'=>'karsabt_customer_message','order_id'=>$orderId,
+        'karsabt_message_nonce'=>$otherNonce,'message'=>'پیام غیرمجاز',
+    ));
+    $assert(403 === $deniedMessage['status'], 'مشتری دیگر برای ارسال پیام به پرونده مالک پاسخ ۴۰۳ می‌گیرد');
+    $guestMessage = $request($baseUrl . '/wp-admin/admin-post.php', $guestJar, 'POST', array(
+        'action'=>'karsabt_customer_message','order_id'=>$orderId,
+        'karsabt_message_nonce'=>$messageNonce,'message'=>'پیام مهمان',
+    ));
+    $assert(403 === $guestMessage['status'], 'مهمان برای ارسال پیام پاسخ ۴۰۳ می‌گیرد');
+
+    $paymentUrl = $baseUrl . '/wp-admin/admin.php?page=karsabt-payments';
+    $paymentPage = $request($paymentUrl, $adminJar);
+    $paymentNonce = $nonce($paymentPage['body'], '_wpnonce');
+    $assert(200 === $paymentPage['status'] && '' !== $paymentNonce, 'مدیر صفحه ثبت پرداخت و nonce واقعی را دریافت می‌کند');
+    $paymentResponse = $request($paymentUrl, $adminJar, 'POST', array(
+        '_wpnonce'=>$paymentNonce,'invoice_id'=>$invoiceId,'amount'=>'60',
+        'method'=>'cash','reference'=>'HTTP-'.$stamp,'note'=>'پرداخت آزمایشی',
+        'karsabt_record_payment'=>'1',
+    ));
+    $paid = karsabt_finance_invoice_paid($invoiceId);
+    $assert(200 === $paymentResponse['status'] && false !== strpos($paymentResponse['body'], 'پرداخت ثبت شد'), 'ثبت پرداخت از فرم واقعی امور مالی موفق است');
+    $assert(60 === $paid, 'مبلغ پرداخت ثبت‌شده در دیتابیس دقیقاً ۶۰ است');
+    $overpayment = $request($paymentUrl, $adminJar, 'POST', array(
+        '_wpnonce'=>$paymentNonce,'invoice_id'=>$invoiceId,'amount'=>'50',
+        'method'=>'cash','reference'=>'HTTP-OVER-'.$stamp,'note'=>'پرداخت بیش از مانده',
+        'karsabt_record_payment'=>'1',
+    ));
+    $assert(false !== strpos($overpayment['body'], 'مبلغ از مانده فاکتور بیشتر است') && 60 === karsabt_finance_invoice_paid($invoiceId), 'پرداخت بیش از مانده از مسیر HTTP رد می‌شود');
+
+    $pdfPath = $root . '/sample.pdf';
+    file_put_contents($pdfPath, "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF");
+    $upload = $request($baseUrl . '/wp-admin/admin-post.php', $customerJar, 'POST', array(
+        'action'=>'karsabt_document_upload','order_id'=>$orderId,
+        'karsabt_docs_nonce'=>$docsNonce,'category'=>'identity','checklist_key'=>'',
+        'document'=>new CURLFile($pdfPath, 'application/pdf', 'http-test.pdf'),
+    ));
+    $docs = get_post_meta($orderId, '_karsabt_documents', true);
+    $docs = is_array($docs) ? $docs : array();
+    $doc = $docs ? end($docs) : array();
+    $assert(in_array($upload['status'], array(302,303), true), 'بارگذاری PDF از فرم واقعی مشتری موفق است');
+    $assert(!empty($doc['id']) && is_file($privateDir . '/' . ($doc['file'] ?? '')), 'فایل و فراداده مدرک در مسیر خصوصی ذخیره شدند');
+
+    if (!empty($doc['id'])) {
+        $downloadUrl = add_query_arg(array(
+            'action'=>'karsabt_document_download','order_id'=>$orderId,'document_id'=>$doc['id'],
+            '_wpnonce'=>wp_create_nonce('karsabt_document_download_'.$orderId.'_'.$doc['id']),
+        ), admin_url('admin-post.php'));
+        $downloadUrl = str_replace(home_url(), $baseUrl, $downloadUrl);
+        $download = $request($downloadUrl, $customerJar);
+        $assert(200 === $download['status'] && 0 === strpos($download['body'], '%PDF-1.4'), 'مالک پرونده فایل خصوصی را از مسیر دانلود واقعی دریافت می‌کند');
+        $wrongOwner = $request($downloadUrl, $otherJar);
+        $assert(403 === $wrongOwner['status'], 'مشتری دیگر برای دریافت مدرک پاسخ ۴۰۳ می‌گیرد');
+        $guestDownload = $request($downloadUrl, $guestJar);
+        $assert(403 === $guestDownload['status'], 'مهمان برای دریافت مدرک پاسخ ۴۰۳ می‌گیرد');
+    } else {
+        $assert(false, 'شناسه مدرک برای آزمون دانلود تولید شد');
+    }
+
+    $invalidUpload = $request($baseUrl . '/wp-admin/admin-post.php', $customerJar, 'POST', array(
+        'action'=>'karsabt_document_upload','order_id'=>$orderId,
+        'karsabt_docs_nonce'=>$docsNonce,'category'=>'identity','checklist_key'=>'',
+        'document'=>new CURLFile($pdfPath, 'text/plain', 'not-allowed.txt'),
+    ));
+    $assert(400 === $invalidUpload['status'], 'فایل با نوع غیرمجاز از مسیر HTTP رد می‌شود');
+} finally {
+    if (!empty($doc['file']) && $privateDir && is_file($privateDir . '/' . $doc['file'])) { @unlink($privateDir . '/' . $doc['file']); }
+    if (!empty($invoiceId)) { $wpdb->delete(karsabt_finance_table(), array('invoice_id'=>$invoiceId)); wp_delete_post($invoiceId, true); }
+    if (!empty($orderId)) { wp_delete_post($orderId, true); }
+    if (!empty($customerPageId)) { wp_delete_post($customerPageId, true); }
+    foreach (array($adminId,$customerId,$otherId) as $userId) { if ($userId && !is_wp_error($userId)) { wp_delete_user($userId); } }
+    foreach (glob($root . '/*') ?: array() as $file) { @unlink($file); }
+    @rmdir($root);
+}
+if ($failures) {
+    fwrite(STDERR, sprintf("\n%d آزمون از %d آزمون HTTP ناموفق بود.\n", count($failures), $checks));
+    exit(1);
+}
+fwrite(STDOUT, sprintf("\nهمه %d آزمون HTTP واقعی موفق شدند.\n", $checks));
