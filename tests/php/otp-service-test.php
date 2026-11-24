@@ -16,6 +16,13 @@ class WP_Error {
     public function __construct($code, $message = '') { $this->code = $code; }
     public function get_error_code() { return $this->code; }
 }
+
+// شبیه‌ساز قفل دیتابیس؛ آزمون یکپارچگی MariaDB قفل واقعی را جداگانه بررسی می‌کند.
+class KarsabtOtpTestDb {
+    public function prepare($query, ...$args) { return $query; }
+    public function get_var($query) { return '1'; }
+}
+$GLOBALS['wpdb'] = new KarsabtOtpTestDb();
 function wp_salt($scheme = '') { return 'karsabt-test-salt-' . $scheme; }
 function karsabt_core_normalize_mobile($mobile) {
     $mobile = preg_replace('/[^0-9]/', '', (string) $mobile);
