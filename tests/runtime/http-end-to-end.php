@@ -53,6 +53,42 @@ $request = static function (string $url, string $jar, string $method = 'GET', ar
     curl_close($ch);
     return array('status' => $status, 'headers' => substr($raw, 0, $headerSize), 'body' => substr($raw, $headerSize));
 };
+$parallelPost = static function (string $url, string $jar, array $payloads): array {
+    $multi = curl_multi_init();
+    $handles = array();
+    foreach ($payloads as $index => $payload) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, array(
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_COOKIEFILE => $jar,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+        ));
+        curl_multi_add_handle($multi, $ch);
+        $handles[$index] = $ch;
+    }
+    do {
+        $status = curl_multi_exec($multi, $active);
+        if ($active) { curl_multi_select($multi, 1.0); }
+    } while ($active && CURLM_OK === $status);
+    $results = array();
+    foreach ($handles as $index => $ch) {
+        $raw = curl_multi_getcontent($ch);
+        $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $results[$index] = array(
+            'status' => (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE),
+            'body' => false === $raw ? '' : substr($raw, $headerSize),
+        );
+        curl_multi_remove_handle($multi, $ch);
+        curl_close($ch);
+    }
+    curl_multi_close($multi);
+    return $results;
+};
 $login = static function (string $username, string $password, string $jar) use ($baseUrl, $request): bool {
     $loginUrl = $baseUrl . '/wp-login.php';
     $request($loginUrl, $jar);
@@ -151,6 +187,16 @@ try {
     $messages = karsabt_messages_get($orderId);
     $assert(in_array($messageResponse['status'], array(302,303), true), 'ارسال پیام مشتری از admin-post.php پاسخ هدایت معتبر دارد');
     $assert(1 === count($messages) && 'پیام آزمایشی از درخواست HTTP' === $messages[0]['text'], 'پیام مشتری از مسیر HTTP در پرونده ذخیره شد');
+    $parallelMessages = $parallelPost($baseUrl . '/wp-admin/admin-post.php', $customerJar, array(
+        array('action'=>'karsabt_customer_message','order_id'=>$orderId,'karsabt_message_nonce'=>$messageNonce,'message'=>'پیام هم‌زمان اول'),
+        array('action'=>'karsabt_customer_message','order_id'=>$orderId,'karsabt_message_nonce'=>$messageNonce,'message'=>'پیام هم‌زمان دوم'),
+        array('action'=>'karsabt_customer_message','order_id'=>$orderId,'karsabt_message_nonce'=>$messageNonce,'message'=>'پیام هم‌زمان سوم'),
+    ));
+    $messages = karsabt_messages_get($orderId);
+    $parallelMessageSuccess = count(array_filter($parallelMessages, static function ($item) { return in_array($item['status'], array(302,303), true); }));
+    $parallelTexts = array_column($messages, 'text');
+    $assert(3 === $parallelMessageSuccess, 'سه درخواست واقعی ارسال پیام به‌صورت هم‌زمان پاسخ موفق گرفتند');
+    $assert(4 === count($messages) && in_array('پیام هم‌زمان اول', $parallelTexts, true) && in_array('پیام هم‌زمان دوم', $parallelTexts, true) && in_array('پیام هم‌زمان سوم', $parallelTexts, true), 'قفل گفت‌وگو مانع حذف یا بازنویسی پیام‌های هم‌زمان شد');
 
     $adminMessagesUrl = $baseUrl . '/wp-admin/edit.php?post_type=karsabt_order&page=karsabt-messages';
     $adminMessagesPage = $request($adminMessagesUrl, $adminJar);
@@ -162,7 +208,7 @@ try {
     ));
     $messages = karsabt_messages_get($orderId);
     $assert(200 === $adminReply['status'] && false !== strpos($adminReply['body'], 'پاسخ ثبت شد'), 'پاسخ مدیر از فرم واقعی مدیریت ثبت شد');
-    $assert(2 === count($messages) && 'admin' === $messages[1]['sender'], 'پاسخ مدیر در گفت‌وگوی پرونده ذخیره شد');
+    $assert(5 === count($messages) && 'admin' === $messages[4]['sender'], 'پاسخ مدیر در گفت‌وگوی پرونده ذخیره شد');
 
     update_post_meta($orderId, '_karsabt_customer_user_id', $otherId);
     $otherPage = $request($customerUrl, $otherJar);
@@ -197,19 +243,25 @@ try {
         'karsabt_record_payment'=>'1',
     ));
     $assert(false !== strpos($overpayment['body'], 'مبلغ از مانده فاکتور بیشتر است') && 60 === karsabt_finance_invoice_paid($invoiceId), 'پرداخت بیش از مانده از مسیر HTTP رد می‌شود');
+    $parallelPayments = $parallelPost($paymentUrl, $adminJar, array(
+        array('_wpnonce'=>$paymentNonce,'invoice_id'=>$invoiceId,'amount'=>'30','method'=>'cash','reference'=>'HTTP-PAR-1-'.$stamp,'note'=>'پرداخت هم‌زمان اول','karsabt_record_payment'=>'1'),
+        array('_wpnonce'=>$paymentNonce,'invoice_id'=>$invoiceId,'amount'=>'30','method'=>'cash','reference'=>'HTTP-PAR-2-'.$stamp,'note'=>'پرداخت هم‌زمان دوم','karsabt_record_payment'=>'1'),
+    ));
+    $acceptedPayments = count(array_filter($parallelPayments, static function ($item) { return false !== strpos($item['body'], 'پرداخت ثبت شد'); }));
+    $assert(1 === $acceptedPayments && 90 === karsabt_finance_invoice_paid($invoiceId), 'دو پرداخت HTTP هم‌زمان ۳۰ واحدی روی مانده ۴۰، فقط یک بار ثبت شدند');
 
     $pdfPath = $root . '/sample.pdf';
     file_put_contents($pdfPath, "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF");
-    $upload = $request($baseUrl . '/wp-admin/admin-post.php', $customerJar, 'POST', array(
-        'action'=>'karsabt_document_upload','order_id'=>$orderId,
-        'karsabt_docs_nonce'=>$docsNonce,'category'=>'identity','checklist_key'=>'',
-        'document'=>new CURLFile($pdfPath, 'application/pdf', 'http-test.pdf'),
+    $parallelUploads = $parallelPost($baseUrl . '/wp-admin/admin-post.php', $customerJar, array(
+        array('action'=>'karsabt_document_upload','order_id'=>$orderId,'karsabt_docs_nonce'=>$docsNonce,'category'=>'identity','checklist_key'=>'','document'=>new CURLFile($pdfPath, 'application/pdf', 'http-test-a.pdf')),
+        array('action'=>'karsabt_document_upload','order_id'=>$orderId,'karsabt_docs_nonce'=>$docsNonce,'category'=>'identity','checklist_key'=>'','document'=>new CURLFile($pdfPath, 'application/pdf', 'http-test-b.pdf')),
     ));
     $docs = get_post_meta($orderId, '_karsabt_documents', true);
     $docs = is_array($docs) ? $docs : array();
     $doc = $docs ? end($docs) : array();
-    $assert(in_array($upload['status'], array(302,303), true), 'بارگذاری PDF از فرم واقعی مشتری موفق است');
-    $assert(!empty($doc['id']) && is_file($privateDir . '/' . ($doc['file'] ?? '')), 'فایل و فراداده مدرک در مسیر خصوصی ذخیره شدند');
+    $uploadSuccess = count(array_filter($parallelUploads, static function ($item) { return in_array($item['status'], array(302,303), true); }));
+    $assert(2 === $uploadSuccess, 'دو بارگذاری واقعی HTTP به‌صورت هم‌زمان پاسخ موفق گرفتند');
+    $assert(2 === count($docs) && !empty($doc['id']) && is_file($privateDir . '/' . ($doc['file'] ?? '')), 'هر دو فایل و فراداده مستقل در مسیر خصوصی ثبت شدند');
 
     if (!empty($doc['id'])) {
         $ownerPage = $request($customerUrl, $customerJar);
@@ -239,7 +291,11 @@ try {
     ));
     $assert(400 === $invalidUpload['status'], 'فایل با نوع غیرمجاز از مسیر HTTP رد می‌شود');
 } finally {
-    if (!empty($doc['file']) && $privateDir && is_file($privateDir . '/' . $doc['file'])) { @unlink($privateDir . '/' . $doc['file']); }
+    foreach ((isset($docs) && is_array($docs) ? $docs : array()) as $uploadedDoc) {
+        if (!empty($uploadedDoc['file']) && $privateDir && is_file($privateDir . '/' . $uploadedDoc['file'])) {
+            @unlink($privateDir . '/' . $uploadedDoc['file']);
+        }
+    }
     if (!empty($invoiceId)) { $wpdb->delete(karsabt_finance_table(), array('invoice_id'=>$invoiceId)); wp_delete_post($invoiceId, true); }
     if (!empty($orderId)) { wp_delete_post($orderId, true); }
     if (!empty($customerPageId)) { wp_delete_post($customerPageId, true); }
