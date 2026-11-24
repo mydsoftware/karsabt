@@ -13,7 +13,7 @@ if (!function_exists('proc_open')) {
     fwrite(STDERR, "تابع proc_open برای آزمون هم‌زمانی در دسترس نیست.\n");
     exit(1);
 }
-$mobile = '0912' . str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+$mobile = '0912' . str_pad((string) random_int(0, 9999999), 7, '0', STR_PAD_LEFT);
 $code = '';
 add_filter('karsabt_send_otp', static function ($accepted, $target, $generated) use (&$code, $mobile) {
     if ($target === $mobile) { $code = (string) $generated; }
@@ -68,7 +68,7 @@ $sendWorker = __DIR__ . '/otp-send-worker.php';
 $sendProcesses = array();
 $sendMobiles = array();
 for ($i = 0; $i < 12; $i++) {
-    $targetMobile = '0913' . str_pad((string) (100000 + $i), 6, '0', STR_PAD_LEFT);
+    $targetMobile = '0913' . str_pad((string) (1000000 + $i), 7, '0', STR_PAD_LEFT);
     $sendMobiles[] = $targetMobile;
     $pipes = array();
     $process = proc_open(array(PHP_BINARY, $sendWorker, $targetMobile), array(
