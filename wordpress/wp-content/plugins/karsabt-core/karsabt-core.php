@@ -398,6 +398,77 @@ function karsabt_core_normalize_mobile($mobile) {
 }
 
 /**
+ * ایندکس یکتای شماره موبایل؛ تضمین دیتابیسی برای جلوگیری از ثبت‌نام تکراری.
+ */
+function karsabt_core_mobile_index_table() {
+    global $wpdb;
+    return $wpdb->prefix . 'karsabt_mobile_index';
+}
+
+function karsabt_core_install_mobile_index() {
+    if ('1' === (string) get_option('karsabt_mobile_index_schema')) { return; }
+    global $wpdb;
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    $table = karsabt_core_mobile_index_table();
+    $charset = $wpdb->get_charset_collate();
+    $sql = "CREATE TABLE {$table} (
+        mobile varchar(10) NOT NULL,
+        user_id bigint(20) unsigned NOT NULL,
+        verified tinyint(1) NOT NULL DEFAULT 0,
+        created_at datetime NOT NULL,
+        PRIMARY KEY  (mobile),
+        UNIQUE KEY user_id (user_id)
+    ) {$charset};";
+    dbDelta($sql);
+
+    // مهاجرت شماره‌های موجود؛ INSERT IGNORE شماره‌های تکراری قدیمی را دوباره تخصیص نمی‌دهد.
+    $users = get_users(array('meta_key'=>'_karsabt_mobile','number'=>-1,'fields'=>'all'));
+    foreach ($users as $user) {
+        $mobile = karsabt_core_normalize_mobile(get_user_meta($user->ID, '_karsabt_mobile', true));
+        if (!$mobile) { continue; }
+        $wpdb->query($wpdb->prepare(
+            "INSERT IGNORE INTO {$table} (mobile,user_id,verified,created_at) VALUES (%s,%d,%d,%s)",
+            $mobile, (int) $user->ID,
+            '1' === (string) get_user_meta($user->ID, '_karsabt_mobile_verified', true) ? 1 : 0,
+            current_time('mysql', true)
+        ));
+    }
+    update_option('karsabt_mobile_index_schema', '1', false);
+}
+add_action('plugins_loaded', 'karsabt_core_install_mobile_index', 20);
+
+function karsabt_core_find_user_by_mobile($mobile) {
+    global $wpdb;
+    $mobile = karsabt_core_normalize_mobile($mobile);
+    if (!$mobile) { return 0; }
+    $table = karsabt_core_mobile_index_table();
+    $user_id = (int) $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$table} WHERE mobile = %s LIMIT 1", $mobile));
+    if ($user_id) { return $user_id; }
+
+    // سازگاری در صورت تأخیر نصب جدول یا داده‌های قدیمی.
+    $users = get_users(array('meta_key'=>'_karsabt_mobile','meta_value'=>$mobile,'number'=>1,'fields'=>'ID'));
+    return $users ? (int) $users[0] : 0;
+}
+
+function karsabt_core_claim_mobile($mobile, $user_id) {
+    global $wpdb;
+    $mobile = karsabt_core_normalize_mobile($mobile);
+    $user_id = absint($user_id);
+    if (!$mobile || !$user_id) { return false; }
+    $table = karsabt_core_mobile_index_table();
+    $result = $wpdb->insert($table, array(
+        'mobile'=>$mobile,
+        'user_id'=>$user_id,
+        'verified'=>1,
+        'created_at'=>current_time('mysql', true),
+    ), array('%s','%d','%d','%s'));
+    if (1 !== $result) { return false; }
+    update_user_meta($user_id, '_karsabt_mobile', $mobile);
+    update_user_meta($user_id, '_karsabt_mobile_verified', '1');
+    return true;
+}
+
+/**
  * محدودیت تلاش برای فرم‌های ورود و ثبت‌نام.
  */
 /**
@@ -454,8 +525,8 @@ function karsabt_core_customer_auth() {
             if (!$mobile) {
                 $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">شماره موبایل معتبر نیست.</p>';
             } elseif (0 === strpos($mode, 'send_')) {
-                $users = get_users(array('meta_key' => '_karsabt_mobile', 'meta_value' => $mobile, 'number' => 1, 'fields' => 'ID'));
-                if (('send_login' === $mode && !$users) || ('send_register' === $mode && $users)) {
+                $mobile_user_id = karsabt_core_find_user_by_mobile($mobile);
+                if (('send_login' === $mode && !$mobile_user_id) || ('send_register' === $mode && $mobile_user_id)) {
                     // پاسخ یکسان برای جلوگیری از افشای وجود یا عدم وجود حساب با شماره موبایل.
                     $notice = '<p class="karsabt-form-notice karsabt-form-success" role="status">اگر شماره واردشده برای این روش واجد شرایط باشد، کد تأیید ارسال می‌شود. در غیر این صورت راهنمایی لازم نمایش داده خواهد شد.</p>';
                 } else {
@@ -475,8 +546,8 @@ function karsabt_core_customer_auth() {
                     // خطای کد نامعتبر، منقضی یا تمام‌شدن تلاش‌ها پاسخ یکسان دارد.
                     $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">کد تأیید معتبر نیست یا منقضی شده است. دوباره درخواست کد بدهید.</p>';
                 } elseif ('verify_login' === $mode) {
-                    $users = get_users(array('meta_key' => '_karsabt_mobile', 'meta_value' => $mobile, 'number' => 1));
-                    $user = $users ? $users[0] : false;
+                    $login_user_id = karsabt_core_find_user_by_mobile($mobile);
+                    $user = $login_user_id ? get_user_by('id', $login_user_id) : false;
                     if (!$user) {
                         $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">حساب کاربری پیدا نشد.</p>';
                     } else {
@@ -489,8 +560,8 @@ function karsabt_core_customer_auth() {
                 } else {
                     $name = isset($_POST['customer_full_name']) ? sanitize_text_field(wp_unslash($_POST['customer_full_name'])) : '';
                     $password = isset($_POST['customer_password']) ? (string) wp_unslash($_POST['customer_password']) : '';
-                    $users = get_users(array('meta_key' => '_karsabt_mobile', 'meta_value' => $mobile, 'number' => 1, 'fields' => 'ID'));
-                    if ($users) {
+                    $existing_mobile_user = karsabt_core_find_user_by_mobile($mobile);
+                    if ($existing_mobile_user) {
                         $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">با این شماره قبلاً حساب ساخته شده است.</p>';
                     } elseif ('' === $name || strlen($name) > 300 || strlen($password) < 10 || strlen($password) > 4096) {
                         $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">نام را وارد کنید و گذرواژه‌ای با حداقل ۱۰ نویسه انتخاب کنید.</p>';
@@ -506,12 +577,16 @@ function karsabt_core_customer_auth() {
                         if (is_wp_error($user_id)) {
                             $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">ساخت حساب انجام نشد. دوباره تلاش کنید.</p>';
                         } else {
-                            update_user_meta($user_id, '_karsabt_mobile', $mobile);
-                            update_user_meta($user_id, '_karsabt_mobile_verified', '1');
+                            if (!karsabt_core_claim_mobile($mobile, $user_id)) {
+                                require_once ABSPATH . 'wp-admin/includes/user.php';
+                                wp_delete_user($user_id);
+                                $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">این شماره قبلاً به حساب دیگری اختصاص یافته است. وارد حساب خود شوید.</p>';
+                            } else {
                             wp_set_current_user($user_id);
                             wp_set_auth_cookie($user_id, true, is_ssl());
                             wp_safe_redirect(get_permalink());
                             exit;
+                            }
                         }
                     }
                 }
