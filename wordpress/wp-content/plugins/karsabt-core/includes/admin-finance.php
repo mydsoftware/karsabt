@@ -60,10 +60,10 @@ function karsabt_finance_register_invoice_type() {
 add_action('init', 'karsabt_finance_register_invoice_type');
 
 function karsabt_finance_menu() {
-    add_menu_page('امور مالی کارثبت', 'امور مالی', 'manage_options', 'karsabt-finance', 'karsabt_finance_render_invoices', 'dashicons-money-alt', 27);
-    add_submenu_page('karsabt-finance', 'فاکتورها', 'فاکتورها', 'manage_options', 'karsabt-finance', 'karsabt_finance_render_invoices');
-    add_submenu_page('karsabt-finance', 'تعرفه خدمات', 'تعرفه خدمات', 'manage_options', 'karsabt-tariffs', 'karsabt_finance_render_tariffs');
-    add_submenu_page('karsabt-finance', 'ثبت پرداخت', 'ثبت پرداخت', 'manage_options', 'karsabt-payments', 'karsabt_finance_render_payments');
+    add_menu_page('امور مالی کارثبت', 'امور مالی', 'manage_karsabt_finance', 'karsabt-finance', 'karsabt_finance_render_invoices', 'dashicons-money-alt', 27);
+    add_submenu_page('karsabt-finance', 'فاکتورها', 'فاکتورها', 'manage_karsabt_finance', 'karsabt-finance', 'karsabt_finance_render_invoices');
+    add_submenu_page('karsabt-finance', 'تعرفه خدمات', 'تعرفه خدمات', 'manage_karsabt_finance', 'karsabt-tariffs', 'karsabt_finance_render_tariffs');
+    add_submenu_page('karsabt-finance', 'ثبت پرداخت', 'ثبت پرداخت', 'manage_karsabt_finance', 'karsabt-payments', 'karsabt_finance_render_payments');
 }
 add_action('admin_menu', 'karsabt_finance_menu');
 
@@ -78,7 +78,7 @@ function karsabt_finance_invoice_paid($invoice_id) {
 }
 
 function karsabt_finance_render_tariffs() {
-    if (!current_user_can('manage_options')) { wp_die('دسترسی مجاز نیست.'); }
+    if (!current_user_can('manage_karsabt_finance')) { wp_die('دسترسی مجاز نیست.'); }
     $services = karsabt_core_services();
     $tariffs = get_option('karsabt_service_tariffs', array());
     if (!is_array($tariffs)) { $tariffs = array(); }
@@ -105,7 +105,7 @@ function karsabt_finance_render_tariffs() {
 }
 
 function karsabt_finance_render_invoices() {
-    if (!current_user_can('manage_options')) { wp_die('دسترسی مجاز نیست.'); }
+    if (!current_user_can('manage_karsabt_finance')) { wp_die('دسترسی مجاز نیست.'); }
     $notice = '';
     if (isset($_POST['karsabt_create_invoice'])) {
         check_admin_referer('karsabt_create_invoice');
@@ -157,7 +157,7 @@ function karsabt_finance_render_invoices() {
 }
 
 function karsabt_finance_render_payments() {
-    if (!current_user_can('manage_options')) { wp_die('دسترسی مجاز نیست.'); }
+    if (!current_user_can('manage_karsabt_finance')) { wp_die('دسترسی مجاز نیست.'); }
     global $wpdb;
     $table = karsabt_finance_table();
     $notice = '';
