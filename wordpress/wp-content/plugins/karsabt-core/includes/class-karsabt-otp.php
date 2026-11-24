@@ -19,6 +19,24 @@ final class Karsabt_OTP_Service {
         return 'karsabt_otp_' . $prefix . '_' . self::mobile_key($mobile);
     }
 
+    /**
+     * قفل مشترک دیتابیس برای هماهنگی درخواست‌ها در چند worker و چند سرور.
+     * اگر قفل دیتابیس در دسترس نباشد، عملیات حساس باید fail-closed شود.
+     */
+    private static function acquire_lock($scope, $timeout = 5) {
+        global $wpdb;
+        $name = 'karsabt_' . substr(hash('sha256', (string) $scope), 0, 48);
+        $result = $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, %d)', $name, (int) $timeout));
+        return '1' === (string) $result ? $name : false;
+    }
+
+    private static function release_lock($name) {
+        global $wpdb;
+        if ($name) {
+            $wpdb->get_var($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $name));
+        }
+    }
+
     /** محدودسازی مستقل بر اساس IP برای جلوگیری از SMS pumping و brute force چندشماره‌ای. */
     private static function ip_rate_limited($action, $limit, $ttl) {
         // در اجرای مستقل تست (خارج از HTTP) محدودیت IP اعمال نمی‌شود؛ در درخواست واقعی REMOTE_ADDR الزامی است.
@@ -31,12 +49,16 @@ final class Karsabt_OTP_Service {
         }
         $action = preg_replace('/[^a-z0-9_]/', '', strtolower((string) $action));
         $key = 'karsabt_otp_ip_' . $action . '_' . hash('sha256', $ip);
-        $count = (int) get_transient($key);
-        if ($count >= $limit) {
-            return true;
+        $lock = self::acquire_lock('rate_' . $key);
+        if (!$lock) { return true; }
+        try {
+            $count = (int) get_transient($key);
+            if ($count >= $limit) { return true; }
+            set_transient($key, $count + 1, $ttl);
+            return false;
+        } finally {
+            self::release_lock($lock);
         }
-        set_transient($key, $count + 1, $ttl);
-        return false;
     }
 
     /** @return true|WP_Error */
@@ -47,6 +69,11 @@ final class Karsabt_OTP_Service {
             return new WP_Error('otp_ip_rate_limited', 'تعداد درخواست‌ها بیش از حد مجاز است. بعداً دوباره تلاش کنید.');
         }
 
+        $mobile_lock = self::acquire_lock('mobile_' . self::mobile_key($mobile));
+        if (!$mobile_lock) {
+            return new WP_Error('otp_temporarily_unavailable', 'سرویس تأیید موقتاً در دسترس نیست. دوباره تلاش کنید.');
+        }
+        try {
         $cooldown_key = self::transient_key('cooldown', $mobile);
         $hour_key = self::transient_key('hour', $mobile);
         if (get_transient($cooldown_key)) {
@@ -76,6 +103,9 @@ final class Karsabt_OTP_Service {
         set_transient($cooldown_key, 1, self::RESEND_DELAY);
         set_transient($hour_key, $sent + 1, HOUR_IN_SECONDS);
         return true;
+        } finally {
+            self::release_lock($mobile_lock);
+        }
     }
 
     /** @return true|WP_Error */
@@ -95,6 +125,11 @@ final class Karsabt_OTP_Service {
             return new WP_Error('otp_ip_rate_limited', 'تعداد تلاش‌ها بیش از حد مجاز است. بعداً دوباره تلاش کنید.');
         }
 
+        $mobile_lock = self::acquire_lock('mobile_' . self::mobile_key($mobile));
+        if (!$mobile_lock) {
+            return new WP_Error('otp_temporarily_unavailable', 'سرویس تأیید موقتاً در دسترس نیست. دوباره تلاش کنید.');
+        }
+        try {
         $transient_key = self::transient_key('code', $mobile);
         $payload = get_transient($transient_key);
         if (!is_array($payload) || empty($payload['hash']) || empty($payload['expires_at']) || (int) $payload['expires_at'] <= time()) {
@@ -122,5 +157,8 @@ final class Karsabt_OTP_Service {
         delete_transient($transient_key);
         delete_transient(self::transient_key('cooldown', $mobile));
         return true;
+        } finally {
+            self::release_lock($mobile_lock);
+        }
     }
 }
