@@ -93,6 +93,8 @@ function karsabt_messages_customer_submit() {
     }
     $lock_name = karsabt_messages_lock($order_id);
     if (!$lock_name) { wp_die('گفت‌وگو در حال به‌روزرسانی است؛ چند لحظه دیگر دوباره تلاش کنید.', '', array('response' => 503)); }
+    // هر worker PHP ممکن است cache محلی قدیمی داشته باشد؛ پس از قفل، متادیتا را از DB تازه بخوان.
+    wp_cache_delete($order_id, 'post_meta');
     $messages = karsabt_messages_get($order_id);
     if (count($messages) >= 200) {
         karsabt_messages_unlock($lock_name);
@@ -129,6 +131,8 @@ function karsabt_messages_admin_page() {
             if (!$lock_name) {
                 $notice = '<div class="notice notice-error"><p>گفت‌وگو در حال به‌روزرسانی است؛ دوباره تلاش کنید.</p></div>';
             } else {
+                // هر worker PHP ممکن است cache محلی قدیمی داشته باشد؛ پس از قفل، متادیتا را از DB تازه بخوان.
+                wp_cache_delete($order_id, 'post_meta');
                 $messages = karsabt_messages_get($order_id);
                 if (count($messages) < 200) {
                 $messages[] = array(
