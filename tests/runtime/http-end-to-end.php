@@ -135,7 +135,11 @@ if (!$adminId || is_wp_error($customerId) || is_wp_error($otherId)) {
 $adminUser = new WP_User($adminId);
 $adminUser->add_cap('manage_options');
 $adminUser->add_cap('edit_karsabt_orders');
-fwrite(STDOUT, '[جزئیات مدیر آزمون] roles=' . implode(',', (array) $adminUser->roles) . ' manage_options=' . (user_can($adminId, 'manage_options') ? 'yes' : 'no') . "\\n");
+fwrite(STDOUT, '[جزئیات مدیر آزمون] roles=' . implode(',', (array) $adminUser->roles)
+    . ' user_can=' . (user_can($adminId, 'manage_options') ? 'yes' : 'no')
+    . ' has_cap=' . ($adminUser->has_cap('manage_options') ? 'yes' : 'no')
+    . ' allcaps=' . wp_json_encode($adminUser->allcaps)
+    . ' rolecaps=' . wp_json_encode((array) (get_role('administrator') ? get_role('administrator')->capabilities : array())) . "\\n");
 (new WP_User($customerId))->set_role('subscriber');
 (new WP_User($otherId))->set_role('subscriber');
 
