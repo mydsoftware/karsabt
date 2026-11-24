@@ -95,6 +95,11 @@ jobs:
           KARSABT_WP_PATH: ${{ runner.temp }}/wordpress
         run: php tests/runtime/database-concurrency.php
 
+      - name: آزمون رقابت هم‌زمان OTP
+        env:
+          KARSABT_WP_PATH: ${{ runner.temp }}/wordpress
+        run: php tests/runtime/otp-concurrency.php
+
       - name: اجرای سرور HTTP آزمایشی
         run: |
           cd "$RUNNER_TEMP/wordpress"
