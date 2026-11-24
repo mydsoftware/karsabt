@@ -127,7 +127,7 @@ $customerPass = 'Karsabt-http-customer-' . bin2hex(random_bytes(8));
 $otherPass = 'Karsabt-http-other-' . bin2hex(random_bytes(8));
 $adminRole = 'karsabt_http_test_admin';
 if (!get_role($adminRole)) {
-    add_role($adminRole, 'مدیر آزمایشی HTTP', array('read'=>true,'manage_options'=>true,'edit_karsabt_orders'=>true));
+    add_role($adminRole, 'مدیر آزمایشی HTTP', array('read'=>true,'manage_karsabt_finance'=>true,'manage_karsabt_messages'=>true,'edit_karsabt_orders'=>true));
 }
 $adminId = wp_create_user('karsabt-http-admin-' . $stamp, $adminPass, 'http-admin-' . $stamp . '@example.test');
 $customerId = wp_create_user('karsabt-http-customer-' . $stamp, $customerPass, 'http-customer-' . $stamp . '@example.test');
@@ -138,7 +138,7 @@ if (is_wp_error($adminId) || is_wp_error($customerId) || is_wp_error($otherId)) 
 (new WP_User($adminId))->set_role($adminRole);
 (new WP_User($customerId))->set_role('subscriber');
 (new WP_User($otherId))->set_role('subscriber');
-if (!user_can($adminId, 'manage_options') || !user_can($adminId, 'edit_karsabt_orders')) {
+if (!user_can($adminId, 'manage_karsabt_finance') || !user_can($adminId, 'manage_karsabt_messages') || !user_can($adminId, 'edit_karsabt_orders')) {
     throw new RuntimeException('نقش مدیر آزمایشی مجوزهای لازم را دریافت نکرد.');
 }
 
