@@ -118,7 +118,7 @@ function karsabt_messages_customer_submit() {
 add_action('admin_post_karsabt_customer_message', 'karsabt_messages_customer_submit');
 
 function karsabt_messages_admin_page() {
-    if (!current_user_can('manage_options')) { wp_die('دسترسی مجاز نیست.'); }
+    if (!current_user_can('manage_karsabt_messages')) { wp_die('دسترسی مجاز نیست.'); }
     $notice = '';
     if ('POST' === strtoupper($_SERVER['REQUEST_METHOD'] ?? '') && isset($_POST['karsabt_admin_message_submit'])) {
         check_admin_referer('karsabt_admin_message');
@@ -197,7 +197,7 @@ function karsabt_messages_admin_menu() {
         'edit.php?post_type=karsabt_order',
         'پیام‌های مشتریان',
         'پیام‌های مشتریان',
-        'manage_options',
+        'manage_karsabt_messages',
         'karsabt-messages',
         'karsabt_messages_admin_page'
     );
