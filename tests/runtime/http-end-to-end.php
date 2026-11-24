@@ -116,6 +116,7 @@ $adminJar = $root . '/admin.cookies';
 $customerJar = $root . '/customer.cookies';
 $otherJar = $root . '/other.cookies';
 $guestJar = $root . '/guest.cookies';
+$doc = array();
 
 try {
     $assert($login('karsabt-http-admin-' . $stamp, $adminPass, $adminJar), 'ورود مدیر از مسیر HTTP وردپرس موفق است');
@@ -148,13 +149,15 @@ try {
     $assert(200 === $adminReply['status'] && false !== strpos($adminReply['body'], 'پاسخ ثبت شد'), 'پاسخ مدیر از فرم واقعی مدیریت ثبت شد');
     $assert(2 === count($messages) && 'admin' === $messages[1]['sender'], 'پاسخ مدیر در گفت‌وگوی پرونده ذخیره شد');
 
+    update_post_meta($orderId, '_karsabt_customer_user_id', $otherId);
     $otherPage = $request($customerUrl, $otherJar);
     $otherNonce = $nonce($otherPage['body'], 'karsabt_message_nonce');
+    update_post_meta($orderId, '_karsabt_customer_user_id', $customerId);
     $deniedMessage = $request($baseUrl . '/wp-admin/admin-post.php', $otherJar, 'POST', array(
         'action'=>'karsabt_customer_message','order_id'=>$orderId,
         'karsabt_message_nonce'=>$otherNonce,'message'=>'پیام غیرمجاز',
     ));
-    $assert(403 === $deniedMessage['status'], 'مشتری دیگر برای ارسال پیام به پرونده مالک پاسخ ۴۰۳ می‌گیرد');
+    $assert('' !== $otherNonce && 403 === $deniedMessage['status'], 'مشتری دیگر با nonce معتبر خودش برای پرونده غیرمالک پاسخ ۴۰۳ می‌گیرد');
     $guestMessage = $request($baseUrl . '/wp-admin/admin-post.php', $guestJar, 'POST', array(
         'action'=>'karsabt_customer_message','order_id'=>$orderId,
         'karsabt_message_nonce'=>$messageNonce,'message'=>'پیام مهمان',
@@ -194,16 +197,25 @@ try {
     $assert(!empty($doc['id']) && is_file($privateDir . '/' . ($doc['file'] ?? '')), 'فایل و فراداده مدرک در مسیر خصوصی ذخیره شدند');
 
     if (!empty($doc['id'])) {
-        $downloadUrl = add_query_arg(array(
-            'action'=>'karsabt_document_download','order_id'=>$orderId,'document_id'=>$doc['id'],
-            '_wpnonce'=>wp_create_nonce('karsabt_document_download_'.$orderId.'_'.$doc['id']),
-        ), admin_url('admin-post.php'));
-        $downloadUrl = str_replace(home_url(), $baseUrl, $downloadUrl);
-        $download = $request($downloadUrl, $customerJar);
+        $ownerPage = $request($customerUrl, $customerJar);
+        $downloadUrl = '';
+        if (preg_match('/href=["\\']([^"\\']*action=karsabt_document_download[^"\\']*)["\\']/', $ownerPage['body'], $linkMatch)) {
+            $downloadUrl = html_entity_decode($linkMatch[1], ENT_QUOTES, 'UTF-8');
+        }
+        $assert('' !== $downloadUrl, 'صفحه مشتری لینک دانلود با nonce معتبر تولید می‌کند');
+        $download = $downloadUrl ? $request($downloadUrl, $customerJar) : array('status'=>0,'body'=>'');
         $assert(200 === $download['status'] && 0 === strpos($download['body'], '%PDF-1.4'), 'مالک پرونده فایل خصوصی را از مسیر دانلود واقعی دریافت می‌کند');
-        $wrongOwner = $request($downloadUrl, $otherJar);
-        $assert(403 === $wrongOwner['status'], 'مشتری دیگر برای دریافت مدرک پاسخ ۴۰۳ می‌گیرد');
-        $guestDownload = $request($downloadUrl, $guestJar);
+
+        update_post_meta($orderId, '_karsabt_customer_user_id', $otherId);
+        $otherDocsPage = $request($customerUrl, $otherJar);
+        $otherDownloadUrl = '';
+        if (preg_match('/href=["\\']([^"\\']*action=karsabt_document_download[^"\\']*)["\\']/', $otherDocsPage['body'], $otherLinkMatch)) {
+            $otherDownloadUrl = html_entity_decode($otherLinkMatch[1], ENT_QUOTES, 'UTF-8');
+        }
+        update_post_meta($orderId, '_karsabt_customer_user_id', $customerId);
+        $wrongOwner = $otherDownloadUrl ? $request($otherDownloadUrl, $otherJar) : array('status'=>0);
+        $assert('' !== $otherDownloadUrl && 403 === $wrongOwner['status'], 'مشتری دیگر با nonce معتبر خودش اجازه دریافت مدرک پرونده غیرمالک را ندارد');
+        $guestDownload = $downloadUrl ? $request($downloadUrl, $guestJar) : array('status'=>0);
         $assert(403 === $guestDownload['status'], 'مهمان برای دریافت مدرک پاسخ ۴۰۳ می‌گیرد');
     } else {
         $assert(false, 'شناسه مدرک برای آزمون دانلود تولید شد');
