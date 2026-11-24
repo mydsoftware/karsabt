@@ -412,7 +412,7 @@ function karsabt_core_install_mobile_index() {
     $table = karsabt_core_mobile_index_table();
     $charset = $wpdb->get_charset_collate();
     $sql = "CREATE TABLE {$table} (
-        mobile varchar(10) NOT NULL,
+        mobile varchar(11) NOT NULL,
         user_id bigint(20) unsigned NOT NULL,
         verified tinyint(1) NOT NULL DEFAULT 0,
         created_at datetime NOT NULL,
