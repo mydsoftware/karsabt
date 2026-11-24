@@ -132,6 +132,7 @@ $otherId = wp_create_user('karsabt-http-other-' . $stamp, $otherPass, 'http-othe
 if (!$adminId || is_wp_error($customerId) || is_wp_error($otherId)) {
     throw new RuntimeException('ساخت یا یافتن کاربران آزمون ناموفق بود.');
 }
+fwrite(STDOUT, '[جزئیات مدیر آزمون] roles=' . implode(',', (array) get_userdata($adminId)->roles) . ' manage_options=' . (user_can($adminId, 'manage_options') ? 'yes' : 'no') . "\\n");
 (new WP_User($customerId))->set_role('subscriber');
 (new WP_User($otherId))->set_role('subscriber');
 
