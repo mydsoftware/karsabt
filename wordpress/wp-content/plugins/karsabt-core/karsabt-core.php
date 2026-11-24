@@ -420,6 +420,11 @@ function karsabt_core_install_mobile_index() {
         UNIQUE KEY user_id (user_id)
     ) {$charset};";
     dbDelta($sql);
+    $created_table = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+    if ($created_table !== $table) {
+        // در صورت شکست ساخت جدول، نسخه نصب‌شده ثبت نشود تا تلاش بعدی تکرار شود.
+        return;
+    }
 
     // مهاجرت شماره‌های موجود؛ INSERT IGNORE شماره‌های تکراری قدیمی را دوباره تخصیص نمی‌دهد.
     $users = get_users(array('meta_key'=>'_karsabt_mobile','number'=>-1,'fields'=>'all'));
