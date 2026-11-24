@@ -192,6 +192,7 @@ try {
         array('action'=>'karsabt_customer_message','order_id'=>$orderId,'karsabt_message_nonce'=>$messageNonce,'message'=>'پیام هم‌زمان دوم'),
         array('action'=>'karsabt_customer_message','order_id'=>$orderId,'karsabt_message_nonce'=>$messageNonce,'message'=>'پیام هم‌زمان سوم'),
     ));
+    wp_cache_delete($orderId, 'post_meta');
     $messages = karsabt_messages_get($orderId);
     $parallelMessageSuccess = count(array_filter($parallelMessages, static function ($item) { return in_array($item['status'], array(302,303), true); }));
     $parallelTexts = array_column($messages, 'text');
@@ -212,6 +213,7 @@ try {
         '_wpnonce'=>$adminMessageNonce,'order_id'=>$orderId,
         'message'=>'پاسخ مدیر از مسیر HTTP','karsabt_admin_message_submit'=>'1',
     ));
+    wp_cache_delete($orderId, 'post_meta');
     $messages = karsabt_messages_get($orderId);
     $assert(200 === $adminReply['status'] && false !== strpos($adminReply['body'], 'پاسخ ثبت شد'), 'پاسخ مدیر از فرم واقعی مدیریت ثبت شد');
     $assert(5 === count($messages) && 'admin' === $messages[4]['sender'], 'پاسخ مدیر در گفت‌وگوی پرونده ذخیره شد');
@@ -265,6 +267,7 @@ try {
         array('action'=>'karsabt_document_upload','order_id'=>$orderId,'karsabt_docs_nonce'=>$docsNonce,'category'=>'identity','checklist_key'=>'','document'=>new CURLFile($pdfPath, 'application/pdf', 'http-test-a.pdf')),
         array('action'=>'karsabt_document_upload','order_id'=>$orderId,'karsabt_docs_nonce'=>$docsNonce,'category'=>'identity','checklist_key'=>'','document'=>new CURLFile($pdfPath, 'application/pdf', 'http-test-b.pdf')),
     ));
+    wp_cache_delete($orderId, 'post_meta');
     $docs = get_post_meta($orderId, '_karsabt_documents', true);
     $docs = is_array($docs) ? $docs : array();
     $doc = $docs ? end($docs) : array();
