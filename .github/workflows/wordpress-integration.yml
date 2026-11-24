@@ -45,7 +45,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: mysqli, curl, dom, json, mbstring, zip
+          extensions: mysqli, curl, dom, json, mbstring, zip, fileinfo
           coverage: none
 
       - name: نصب WP-CLI
@@ -70,7 +70,10 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/wordpress"
           wp config create --dbname="$DB_NAME" --dbuser="$DB_USER" --dbpass="$DB_PASSWORD" --dbhost="$DB_HOST" --allow-root
-          wp core install --url=http://localhost:8080 --title="Karsabt CI" --admin_user=ci-admin --admin_password=ci-password-123 --admin_email=ci@example.test --skip-email --allow-root
+          wp config set KARSABT_PRIVATE_UPLOAD_DIR "$RUNNER_TEMP/karsabt-private" --type=constant --allow-root
+          mkdir -p "$RUNNER_TEMP/karsabt-private"
+          chmod 700 "$RUNNER_TEMP/karsabt-private"
+          wp core install --url=http://127.0.0.1:8080 --title="Karsabt CI" --admin_user=ci-admin --admin_password=ci-password-123 --admin_email=ci@example.test --skip-email --allow-root
 
       - name: نصب و فعال‌سازی افزونه و قالب کارثبت
         run: |
@@ -91,3 +94,28 @@ jobs:
         env:
           KARSABT_WP_PATH: ${{ runner.temp }}/wordpress
         run: php tests/runtime/database-concurrency.php
+
+      - name: اجرای سرور HTTP آزمایشی
+        run: |
+          cd "$RUNNER_TEMP/wordpress"
+          PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8080 -t "$RUNNER_TEMP/wordpress" > "$RUNNER_TEMP/karsabt-http-server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/karsabt-http-server.pid"
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/wp-login.php >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/karsabt-http-server.log"
+          exit 1
+
+      - name: آزمون HTTP واقعی پیام، پرداخت و مدارک
+        env:
+          KARSABT_WP_PATH: ${{ runner.temp }}/wordpress
+          KARSABT_HTTP_BASE_URL: http://127.0.0.1:8080
+        run: php tests/runtime/http-end-to-end.php
+
+      - name: توقف سرور HTTP
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/karsabt-http-server.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/karsabt-http-server.pid")" 2>/dev/null || true
+          fi
