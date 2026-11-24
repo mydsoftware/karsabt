@@ -63,11 +63,25 @@ $login = static function (string $username, string $password, string $jar) use (
     return in_array($response['status'], array(302, 303), true);
 };
 $extract = static function (string $html, string $name): string {
-    if (!preg_match('/<input[^>]+name=["\\']' . preg_quote($name, '/') . '["\\'][^>]+value=["\\']([^"\\']+)["\\']/i', $html, $m)
-        && !preg_match('/<input[^>]+value=["\\']([^"\\']+)["\\'][^>]+name=["\\']' . preg_quote($name, '/') . '["\\']/i', $html, $m)) {
-        return '';
+    $dom = new DOMDocument();
+    @$dom->loadHTML($html);
+    foreach ($dom->getElementsByTagName('input') as $input) {
+        if ($name === $input->getAttribute('name')) {
+            return $input->getAttribute('value');
+        }
     }
-    return html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
+    return '';
+};
+$findDownloadUrl = static function (string $html): string {
+    $dom = new DOMDocument();
+    @$dom->loadHTML($html);
+    foreach ($dom->getElementsByTagName('a') as $link) {
+        $href = html_entity_decode($link->getAttribute('href'), ENT_QUOTES, 'UTF-8');
+        if (false !== strpos($href, 'action=karsabt_document_download')) {
+            return $href;
+        }
+    }
+    return '';
 };
 $nonce = static function (string $html, string $name) use ($extract): string { return $extract($html, $name); };
 
@@ -199,20 +213,14 @@ try {
 
     if (!empty($doc['id'])) {
         $ownerPage = $request($customerUrl, $customerJar);
-        $downloadUrl = '';
-        if (preg_match('/href=["\\']([^"\\']*action=karsabt_document_download[^"\\']*)["\\']/', $ownerPage['body'], $linkMatch)) {
-            $downloadUrl = html_entity_decode($linkMatch[1], ENT_QUOTES, 'UTF-8');
-        }
+        $downloadUrl = $findDownloadUrl($ownerPage['body']);
         $assert('' !== $downloadUrl, 'صفحه مشتری لینک دانلود با nonce معتبر تولید می‌کند');
         $download = $downloadUrl ? $request($downloadUrl, $customerJar) : array('status'=>0,'body'=>'');
         $assert(200 === $download['status'] && 0 === strpos($download['body'], '%PDF-1.4'), 'مالک پرونده فایل خصوصی را از مسیر دانلود واقعی دریافت می‌کند');
 
         update_post_meta($orderId, '_karsabt_customer_user_id', $otherId);
         $otherDocsPage = $request($customerUrl, $otherJar);
-        $otherDownloadUrl = '';
-        if (preg_match('/href=["\\']([^"\\']*action=karsabt_document_download[^"\\']*)["\\']/', $otherDocsPage['body'], $otherLinkMatch)) {
-            $otherDownloadUrl = html_entity_decode($otherLinkMatch[1], ENT_QUOTES, 'UTF-8');
-        }
+        $otherDownloadUrl = $findDownloadUrl($otherDocsPage['body']);
         update_post_meta($orderId, '_karsabt_customer_user_id', $customerId);
         $wrongOwner = $otherDownloadUrl ? $request($otherDownloadUrl, $otherJar) : array('status'=>0);
         $assert('' !== $otherDownloadUrl && 403 === $wrongOwner['status'], 'مشتری دیگر با nonce معتبر خودش اجازه دریافت مدرک پرونده غیرمالک را ندارد');
