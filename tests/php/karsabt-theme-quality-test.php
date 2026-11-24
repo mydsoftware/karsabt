@@ -115,8 +115,8 @@ karsabt_test('محدودیت تعداد پیام هر پرونده', strpos($mes
 karsabt_test('قفل دیتابیس برای جلوگیری از بازنویسی پیام‌های هم‌زمان', strpos($messages, 'SELECT GET_LOCK') !== false && strpos($messages, 'SELECT RELEASE_LOCK') !== false);
 karsabt_test('هر دو مسیر ارسال مشتری و مدیر از قفل گفت‌وگو استفاده می‌کنند', substr_count($messages, 'karsabt_messages_lock($order_id)') >= 2);
 karsabt_test('قفل گفت‌وگو پس از ذخیره پیام آزاد می‌شود', substr_count($messages, 'karsabt_messages_unlock($lock_name)') >= 2);
-karsabt_test('پنل پیام‌های مدیریتی فقط برای مدیر', strpos($messages, "current_user_can('manage_options')") !== false);
-karsabt_test('امور مالی فقط برای مدیر قابل دسترسی است', substr_count($finance, "current_user_can('manage_options')") >= 3);
+karsabt_test('پنل پیام‌های مدیریتی فقط برای مدیر', strpos($messages, "current_user_can('manage_karsabt_messages')") !== false);
+karsabt_test('امور مالی فقط برای مدیر قابل دسترسی است', substr_count($finance, "current_user_can('manage_karsabt_finance')") >= 3);
 karsabt_test('ممانعت از پرداخت بیشتر از مانده فاکتور', strpos($finance, '$amount > ($total - $paid)') !== false);
 karsabt_test('قفل تراکنشی ثبت پرداخت هم‌زمان', strpos($finance, "FOR UPDATE") !== false && strpos($finance, "START TRANSACTION") !== false && strpos($finance, "COMMIT") !== false && strpos($finance, "ROLLBACK") !== false);
 karsabt_test('جدول پرداخت‌ها با موتور تراکنشی InnoDB ساخته می‌شود', strpos($finance, 'ENGINE=InnoDB') !== false);
