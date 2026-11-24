@@ -122,26 +122,25 @@ $findDownloadUrl = static function (string $html): string {
 $nonce = static function (string $html, string $name) use ($extract): string { return $extract($html, $name); };
 
 $stamp = bin2hex(random_bytes(4));
-$adminPass = 'ci-password-123';
-$admin = get_user_by('login', 'ci-admin');
-$adminId = $admin ? (int) $admin->ID : 0;
+$adminPass = 'Karsabt-http-admin-' . bin2hex(random_bytes(8));
 $customerPass = 'Karsabt-http-customer-' . bin2hex(random_bytes(8));
 $otherPass = 'Karsabt-http-other-' . bin2hex(random_bytes(8));
+$adminRole = 'karsabt_http_test_admin';
+if (!get_role($adminRole)) {
+    add_role($adminRole, 'مدیر آزمایشی HTTP', array('read'=>true,'manage_options'=>true,'edit_karsabt_orders'=>true));
+}
+$adminId = wp_create_user('karsabt-http-admin-' . $stamp, $adminPass, 'http-admin-' . $stamp . '@example.test');
 $customerId = wp_create_user('karsabt-http-customer-' . $stamp, $customerPass, 'http-customer-' . $stamp . '@example.test');
 $otherId = wp_create_user('karsabt-http-other-' . $stamp, $otherPass, 'http-other-' . $stamp . '@example.test');
-if (!$adminId || is_wp_error($customerId) || is_wp_error($otherId)) {
-    throw new RuntimeException('ساخت یا یافتن کاربران آزمون ناموفق بود.');
+if (is_wp_error($adminId) || is_wp_error($customerId) || is_wp_error($otherId)) {
+    throw new RuntimeException('ساخت کاربران آزمون ناموفق بود.');
 }
-$adminUser = new WP_User($adminId);
-$adminUser->add_cap('manage_options');
-$adminUser->add_cap('edit_karsabt_orders');
-fwrite(STDOUT, '[جزئیات مدیر آزمون] roles=' . implode(',', (array) $adminUser->roles)
-    . ' user_can=' . (user_can($adminId, 'manage_options') ? 'yes' : 'no')
-    . ' has_cap=' . ($adminUser->has_cap('manage_options') ? 'yes' : 'no')
-    . ' allcaps=' . wp_json_encode($adminUser->allcaps)
-    . ' rolecaps=' . wp_json_encode((array) (get_role('administrator') ? get_role('administrator')->capabilities : array())) . "\\n");
+(new WP_User($adminId))->set_role($adminRole);
 (new WP_User($customerId))->set_role('subscriber');
 (new WP_User($otherId))->set_role('subscriber');
+if (!user_can($adminId, 'manage_options') || !user_can($adminId, 'edit_karsabt_orders')) {
+    throw new RuntimeException('نقش مدیر آزمایشی مجوزهای لازم را دریافت نکرد.');
+}
 
 $orderId = wp_insert_post(array('post_type'=>'karsabt_order','post_status'=>'private','post_title'=>'HTTP test '.$stamp), true);
 if (is_wp_error($orderId)) { throw new RuntimeException('ساخت پرونده آزمون ناموفق بود.'); }
@@ -178,7 +177,7 @@ $guestJar = $root . '/guest.cookies';
 $doc = array();
 
 try {
-    $assert($login('ci-admin', $adminPass, $adminJar), 'ورود مدیر CI از مسیر HTTP وردپرس موفق است');
+    $assert($login('karsabt-http-admin-' . $stamp, $adminPass, $adminJar), 'ورود مدیر آزمایشی از مسیر HTTP وردپرس موفق است');
     $assert($login('karsabt-http-customer-' . $stamp, $customerPass, $customerJar), 'ورود مشتری از مسیر HTTP وردپرس موفق است');
     $assert($login('karsabt-http-other-' . $stamp, $otherPass, $otherJar), 'ورود مشتری دوم از مسیر HTTP وردپرس موفق است');
 
@@ -319,9 +318,10 @@ try {
     if (!empty($invoiceId)) { $wpdb->delete(karsabt_finance_table(), array('invoice_id'=>$invoiceId)); wp_delete_post($invoiceId, true); }
     if (!empty($orderId)) { wp_delete_post($orderId, true); }
     if (!empty($customerPageId)) { wp_delete_post($customerPageId, true); }
-    foreach (array($customerId,$otherId) as $userId) { if ($userId && !is_wp_error($userId)) { wp_delete_user($userId); } }
+    foreach (array($adminId,$customerId,$otherId) as $userId) { if ($userId && !is_wp_error($userId)) { wp_delete_user($userId); } }
     foreach (glob($root . '/*') ?: array() as $file) { @unlink($file); }
     @rmdir($root);
+    if (get_role('karsabt_http_test_admin')) { remove_role('karsabt_http_test_admin'); }
 }
 if ($failures) {
     fwrite(STDERR, sprintf("\n%d آزمون از %d آزمون HTTP ناموفق بود.\n", count($failures), $checks));
