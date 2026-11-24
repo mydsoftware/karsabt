@@ -67,6 +67,9 @@ if (!is_wp_error($staffId) && !is_wp_error($customerId)) {
     $testMobile = '0912' . str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     $claimFirst = karsabt_core_claim_mobile($testMobile, $customerId);
     $claimDuplicate = karsabt_core_claim_mobile($testMobile, $staffId);
+    if (true !== $claimFirst) {
+        fwrite(STDERR, '[جزئیات ایندکس موبایل] error=' . $wpdb->last_error . ' query=' . $wpdb->last_query . ' mobile=' . $testMobile . ' customer=' . $customerId . "\\n");
+    }
     $assert(true === $claimFirst, 'شماره موبایل برای حساب اول رزرو می‌شود');
     $assert(false === $claimDuplicate, 'شماره موبایل تکراری برای حساب دوم در سطح دیتابیس رد می‌شود');
     $assert($customerId === karsabt_core_find_user_by_mobile($testMobile), 'جستجوی شماره موبایل به مالک یکتا می‌رسد');
