@@ -125,9 +125,9 @@ karsabt_test('نمایش فاکتور فقط به مالک حساب', strpos($fi
 
 
 
-karsabt_test('الگوی صفحه فرود کمپین', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'ks-landing-request') !== false);
-karsabt_test('فرم سفارش در صفحه فرود', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), '[karsabt_order_form]') !== false);
-karsabt_test('راهنمای صفحات فرود', is_file($theme . '/docs/LANDING-PAGES-FA.md'));
+karsabt_test('الگوی صفحه فرود تک‌صفحه‌ای', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'ks-onepage') !== false);
+karsabt_test('ارتباط مستقیم بدون فرم اینترنتی در صفحه فرود', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'بدون فرم اینترنتی') !== false);
+karsabt_test('تعریف قالب صفحه فرود در سربرگ فایل', is_file($theme . '/page-templates/landing-page.php') && strpos((string) file_get_contents($theme . '/page-templates/landing-page.php'), 'Template Name:') !== false);
 
 
 karsabt_test('قالب درباره ما', is_file($theme . '/page-templates/about.php'));
@@ -144,9 +144,9 @@ $services_template = (string) file_get_contents($theme . '/page-templates/servic
 $detail_template = (string) file_get_contents($theme . '/page-templates/service-detail.php');
 $theme_js = (string) file_get_contents($theme . '/assets/js/theme.js');
 
-karsabt_test('عنوان صفحه فرود با محتوای وردپرس نمایش داده می‌شود', strpos($landing, 'the_title()') !== false);
-karsabt_test('محتوای صفحه فرود در قالب entry-content', strpos($landing, 'the_content()') !== false && strpos($landing, 'entry-content') !== false);
-karsabt_test('FAQ صفحه فرود با خروجی امن', strpos($landing, 'esc_html($faq[\'question\'])') !== false && strpos($landing, 'wpautop(esc_html($faq[\'answer\']))') !== false);
+karsabt_test('عنوان صفحه فرود از عنوان برگه وردپرس خوانده می‌شود', strpos($landing, 'get_the_title($ks_post_id)') !== false);
+karsabt_test('توضیح صفحه فرود از خلاصه قابل ویرایش وردپرس استفاده می‌کند', strpos($landing, 'get_the_excerpt($ks_post_id)') !== false);
+karsabt_test('FAQ صفحه فرود با خروجی امن', strpos($landing, 'esc_html($ks_faq[\'question\'])') !== false && strpos($landing, 'wpautop(esc_html($ks_faq[\'answer\']))') !== false);
 karsabt_test('صفحه درباره شامل محتوای ویرایش‌پذیر است', strpos($about, 'the_content()') !== false);
 karsabt_test('لینک تلفن در صفحه تماس امن‌سازی شده', strpos($contact, 'esc_url(\'tel:\' . preg_replace') !== false && strpos($contact, 'esc_html($phone)') !== false);
 karsabt_test('صفحه تعرفه استعلام خدمت را در لینک منتقل می‌کند', strpos($pricing, 'add_query_arg') !== false && strpos($pricing, "'service'") !== false);
