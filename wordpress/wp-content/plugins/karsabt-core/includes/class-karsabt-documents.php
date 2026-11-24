@@ -217,6 +217,8 @@ function karsabt_docs_upload_handler() {
 
     $lock_name = karsabt_docs_lock($order_id);
     if (!$lock_name) { wp_die('مدارک این پرونده در حال به‌روزرسانی است؛ دوباره تلاش کنید.', '', array('response'=>503)); }
+    // cache محلی هر worker پس از گرفتن قفل باید تازه‌سازی شود تا مدارک هم‌زمان بازنویسی نشوند.
+    wp_cache_delete($order_id, 'post_meta');
     $docs = get_post_meta($order_id, '_karsabt_documents', true);
     $docs = is_array($docs) ? $docs : array();
     if (count($docs) >= 20) {
@@ -321,6 +323,8 @@ function karsabt_docs_admin_page() {
             if (!$lock_name) {
                 $notice = '<div class="notice notice-error"><p>مدارک پرونده در حال به‌روزرسانی است؛ دوباره تلاش کنید.</p></div>';
             } else {
+            // بررسی و ویرایش مدارک باید بر پایه آخرین نسخه دیتابیس انجام شود.
+            wp_cache_delete($order_id, 'post_meta');
             list($doc, $docs) = karsabt_docs_find($order_id, $document_id);
             if ($doc && isset(karsabt_docs_review_states()[$status])) {
                 $doc['status'] = $status;
