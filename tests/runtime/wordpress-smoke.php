@@ -38,6 +38,7 @@ $tables = array(
     $wpdb->posts,
     $wpdb->postmeta,
     karsabt_finance_table(),
+    karsabt_core_mobile_index_table(),
 );
 foreach ($tables as $table) {
     $engine = $wpdb->get_var($wpdb->prepare(
@@ -47,11 +48,32 @@ foreach ($tables as $table) {
     $assert(strtolower((string) $engine) === 'innodb', "جدول {$table} از InnoDB استفاده می‌کند");
 }
 
+$mobileIndex = karsabt_core_mobile_index_table();
+$mobileIndexEngine = $wpdb->get_var($wpdb->prepare(
+    'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s',
+    $mobileIndex
+));
+$assert('innodb' === strtolower((string) $mobileIndexEngine), 'ایندکس شماره موبایل روی InnoDB قرار دارد');
+$mobileIndexes = $wpdb->get_results("SHOW INDEX FROM {$mobileIndex}", ARRAY_A);
+$mobilePrimary = array_filter((array) $mobileIndexes, static function ($row) { return 'PRIMARY' === ($row['Key_name'] ?? ''); });
+$userUnique = array_filter((array) $mobileIndexes, static function ($row) { return 'user_id' === ($row['Key_name'] ?? '') && '0' === (string) ($row['Non_unique'] ?? '1'); });
+$assert((bool) $mobilePrimary && (bool) $userUnique, 'شماره موبایل و شناسه کاربر در ایندکس دیتابیس یکتا هستند');
+
 $staffId = wp_create_user('karsabt-ci-staff', 'ci-staff-password', 'staff@example.test');
 $customerId = wp_create_user('karsabt-ci-customer', 'ci-customer-password', 'customer@example.test');
 $assert(!is_wp_error($staffId) && !is_wp_error($customerId), 'کاربران آزمایشی ایجاد شدند');
 
 if (!is_wp_error($staffId) && !is_wp_error($customerId)) {
+    $testMobile = '0912' . str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $claimFirst = karsabt_core_claim_mobile($testMobile, $customerId);
+    $claimDuplicate = karsabt_core_claim_mobile($testMobile, $staffId);
+    $assert(true === $claimFirst, 'شماره موبایل برای حساب اول رزرو می‌شود');
+    $assert(false === $claimDuplicate, 'شماره موبایل تکراری برای حساب دوم در سطح دیتابیس رد می‌شود');
+    $assert($customerId === karsabt_core_find_user_by_mobile($testMobile), 'جستجوی شماره موبایل به مالک یکتا می‌رسد');
+    $wpdb->delete($mobileIndex, array('mobile'=>$testMobile), array('%s'));
+    delete_user_meta($customerId, '_karsabt_mobile');
+    delete_user_meta($customerId, '_karsabt_mobile_verified');
+
     $staff = new WP_User($staffId);
     $staff->set_role('karsabt_case_worker');
 
