@@ -64,7 +64,7 @@ $customerId = wp_create_user('karsabt-ci-customer', 'ci-customer-password', 'cus
 $assert(!is_wp_error($staffId) && !is_wp_error($customerId), 'کاربران آزمایشی ایجاد شدند');
 
 if (!is_wp_error($staffId) && !is_wp_error($customerId)) {
-    $testMobile = '0912' . str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $testMobile = '0912' . str_pad((string) random_int(0, 9999999), 7, '0', STR_PAD_LEFT);
     $claimFirst = karsabt_core_claim_mobile($testMobile, $customerId);
     $claimDuplicate = karsabt_core_claim_mobile($testMobile, $staffId);
     if (true !== $claimFirst) {
