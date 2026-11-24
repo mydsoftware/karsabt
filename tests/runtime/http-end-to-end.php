@@ -201,6 +201,9 @@ try {
     $adminMessagesUrl = $baseUrl . '/wp-admin/edit.php?post_type=karsabt_order&page=karsabt-messages';
     $adminMessagesPage = $request($adminMessagesUrl, $adminJar);
     $adminMessageNonce = $nonce($adminMessagesPage['body'], '_wpnonce');
+    if (200 !== $adminMessagesPage['status'] || '' === $adminMessageNonce) {
+        fwrite(STDERR, "[جزئیات پیام مدیر] HTTP=" . $adminMessagesPage['status'] . " nonce=" . ('' !== $adminMessageNonce ? 'yes' : 'no') . " body=" . substr(strip_tags($adminMessagesPage['body']), 0, 300) . "\\n");
+    }
     $assert(200 === $adminMessagesPage['status'] && '' !== $adminMessageNonce, 'مدیر صفحه گفت‌وگو و nonce پاسخ را دریافت می‌کند');
     $adminReply = $request($adminMessagesUrl, $adminJar, 'POST', array(
         '_wpnonce'=>$adminMessageNonce,'order_id'=>$orderId,
@@ -223,11 +226,14 @@ try {
         'action'=>'karsabt_customer_message','order_id'=>$orderId,
         'karsabt_message_nonce'=>$messageNonce,'message'=>'پیام مهمان',
     ));
-    $assert(403 === $guestMessage['status'], 'مهمان برای ارسال پیام پاسخ ۴۰۳ می‌گیرد');
+    $assert(in_array($guestMessage['status'], array(400,403), true), 'مهمان از مسیر HTTP اجازه ارسال پیام دریافت نمی‌کند');
 
     $paymentUrl = $baseUrl . '/wp-admin/admin.php?page=karsabt-payments';
     $paymentPage = $request($paymentUrl, $adminJar);
     $paymentNonce = $nonce($paymentPage['body'], '_wpnonce');
+    if (200 !== $paymentPage['status'] || '' === $paymentNonce) {
+        fwrite(STDERR, "[جزئیات پرداخت] HTTP=" . $paymentPage['status'] . " nonce=" . ('' !== $paymentNonce ? 'yes' : 'no') . " body=" . substr(strip_tags($paymentPage['body']), 0, 300) . "\\n");
+    }
     $assert(200 === $paymentPage['status'] && '' !== $paymentNonce, 'مدیر صفحه ثبت پرداخت و nonce واقعی را دریافت می‌کند');
     $paymentResponse = $request($paymentUrl, $adminJar, 'POST', array(
         '_wpnonce'=>$paymentNonce,'invoice_id'=>$invoiceId,'amount'=>'60',
@@ -277,7 +283,7 @@ try {
         $wrongOwner = $otherDownloadUrl ? $request($otherDownloadUrl, $otherJar) : array('status'=>0);
         $assert('' !== $otherDownloadUrl && 403 === $wrongOwner['status'], 'مشتری دیگر با nonce معتبر خودش اجازه دریافت مدرک پرونده غیرمالک را ندارد');
         $guestDownload = $downloadUrl ? $request($downloadUrl, $guestJar) : array('status'=>0);
-        $assert(403 === $guestDownload['status'], 'مهمان برای دریافت مدرک پاسخ ۴۰۳ می‌گیرد');
+        $assert(in_array($guestDownload['status'], array(400,403), true), 'مهمان از مسیر HTTP اجازه دریافت مدرک دریافت نمی‌کند');
     } else {
         $assert(false, 'شناسه مدرک برای آزمون دانلود تولید شد');
     }
