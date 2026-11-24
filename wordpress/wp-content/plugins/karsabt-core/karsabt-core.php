@@ -78,7 +78,7 @@ function karsabt_core_register_staff_role() {
     $admin = get_role('administrator');
     if ($admin) {
         // در نصب‌های سفارشی/مهاجرت‌یافته، capability اصلی مدیر را نیز صریحاً حفظ کن.
-        foreach (array('manage_options','edit_karsabt_orders','edit_others_karsabt_orders','publish_karsabt_orders','read_private_karsabt_orders','delete_karsabt_orders','delete_private_karsabt_orders','delete_published_karsabt_orders','delete_others_karsabt_orders','edit_private_karsabt_orders','edit_published_karsabt_orders') as $cap) {
+        foreach (array('manage_options','manage_karsabt_finance','manage_karsabt_messages','edit_karsabt_orders','edit_others_karsabt_orders','publish_karsabt_orders','read_private_karsabt_orders','delete_karsabt_orders','delete_private_karsabt_orders','delete_published_karsabt_orders','delete_others_karsabt_orders','edit_private_karsabt_orders','edit_published_karsabt_orders') as $cap) {
             $admin->add_cap($cap);
         }
     }
