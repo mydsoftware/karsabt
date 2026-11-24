@@ -122,16 +122,16 @@ $findDownloadUrl = static function (string $html): string {
 $nonce = static function (string $html, string $name) use ($extract): string { return $extract($html, $name); };
 
 $stamp = bin2hex(random_bytes(4));
-$adminPass = 'Karsabt-http-admin-' . bin2hex(random_bytes(8));
+$adminPass = 'ci-password-123';
+$admin = get_user_by('login', 'ci-admin');
+$adminId = $admin ? (int) $admin->ID : 0;
 $customerPass = 'Karsabt-http-customer-' . bin2hex(random_bytes(8));
 $otherPass = 'Karsabt-http-other-' . bin2hex(random_bytes(8));
-$adminId = wp_create_user('karsabt-http-admin-' . $stamp, $adminPass, 'http-admin-' . $stamp . '@example.test');
 $customerId = wp_create_user('karsabt-http-customer-' . $stamp, $customerPass, 'http-customer-' . $stamp . '@example.test');
 $otherId = wp_create_user('karsabt-http-other-' . $stamp, $otherPass, 'http-other-' . $stamp . '@example.test');
-if (is_wp_error($adminId) || is_wp_error($customerId) || is_wp_error($otherId)) {
-    throw new RuntimeException('ساخت کاربران آزمون ناموفق بود.');
+if (!$adminId || is_wp_error($customerId) || is_wp_error($otherId)) {
+    throw new RuntimeException('ساخت یا یافتن کاربران آزمون ناموفق بود.');
 }
-(new WP_User($adminId))->set_role('administrator');
 (new WP_User($customerId))->set_role('subscriber');
 (new WP_User($otherId))->set_role('subscriber');
 
@@ -170,7 +170,7 @@ $guestJar = $root . '/guest.cookies';
 $doc = array();
 
 try {
-    $assert($login('karsabt-http-admin-' . $stamp, $adminPass, $adminJar), 'ورود مدیر از مسیر HTTP وردپرس موفق است');
+    $assert($login('ci-admin', $adminPass, $adminJar), 'ورود مدیر CI از مسیر HTTP وردپرس موفق است');
     $assert($login('karsabt-http-customer-' . $stamp, $customerPass, $customerJar), 'ورود مشتری از مسیر HTTP وردپرس موفق است');
     $assert($login('karsabt-http-other-' . $stamp, $otherPass, $otherJar), 'ورود مشتری دوم از مسیر HTTP وردپرس موفق است');
 
@@ -196,6 +196,9 @@ try {
     $parallelMessageSuccess = count(array_filter($parallelMessages, static function ($item) { return in_array($item['status'], array(302,303), true); }));
     $parallelTexts = array_column($messages, 'text');
     $assert(3 === $parallelMessageSuccess, 'سه درخواست واقعی ارسال پیام به‌صورت هم‌زمان پاسخ موفق گرفتند');
+    if (4 !== count($messages) || !in_array('پیام هم‌زمان اول', $parallelTexts, true) || !in_array('پیام هم‌زمان دوم', $parallelTexts, true) || !in_array('پیام هم‌زمان سوم', $parallelTexts, true)) {
+        fwrite(STDERR, '[جزئیات پیام‌های ذخیره‌شده] ' . wp_json_encode($parallelTexts, JSON_UNESCAPED_UNICODE) . "\\n");
+    }
     $assert(4 === count($messages) && in_array('پیام هم‌زمان اول', $parallelTexts, true) && in_array('پیام هم‌زمان دوم', $parallelTexts, true) && in_array('پیام هم‌زمان سوم', $parallelTexts, true), 'قفل گفت‌وگو مانع حذف یا بازنویسی پیام‌های هم‌زمان شد');
 
     $adminMessagesUrl = $baseUrl . '/wp-admin/edit.php?post_type=karsabt_order&page=karsabt-messages';
@@ -305,7 +308,7 @@ try {
     if (!empty($invoiceId)) { $wpdb->delete(karsabt_finance_table(), array('invoice_id'=>$invoiceId)); wp_delete_post($invoiceId, true); }
     if (!empty($orderId)) { wp_delete_post($orderId, true); }
     if (!empty($customerPageId)) { wp_delete_post($customerPageId, true); }
-    foreach (array($adminId,$customerId,$otherId) as $userId) { if ($userId && !is_wp_error($userId)) { wp_delete_user($userId); } }
+    foreach (array($customerId,$otherId) as $userId) { if ($userId && !is_wp_error($userId)) { wp_delete_user($userId); } }
     foreach (glob($root . '/*') ?: array() as $file) { @unlink($file); }
     @rmdir($root);
 }
