@@ -12,6 +12,7 @@ if (!$wpPath || !is_file($wpPath . '/wp-load.php') || !$baseUrl || !function_exi
     exit(1);
 }
 require $wpPath . '/wp-load.php';
+require_once ABSPATH . 'wp-admin/includes/user.php';
 
 $checks = 0;
 $failures = array();
@@ -221,10 +222,12 @@ try {
         $assert(false, 'شناسه مدرک برای آزمون دانلود تولید شد');
     }
 
+    $badPath = $root . '/not-allowed.txt';
+    file_put_contents($badPath, 'این فایل PDF یا تصویر نیست.');
     $invalidUpload = $request($baseUrl . '/wp-admin/admin-post.php', $customerJar, 'POST', array(
         'action'=>'karsabt_document_upload','order_id'=>$orderId,
         'karsabt_docs_nonce'=>$docsNonce,'category'=>'identity','checklist_key'=>'',
-        'document'=>new CURLFile($pdfPath, 'text/plain', 'not-allowed.txt'),
+        'document'=>new CURLFile($badPath, 'text/plain', 'not-allowed.txt'),
     ));
     $assert(400 === $invalidUpload['status'], 'فایل با نوع غیرمجاز از مسیر HTTP رد می‌شود');
 } finally {
