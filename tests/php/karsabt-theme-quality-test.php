@@ -76,9 +76,11 @@ karsabt_test('عدم نمایش اطلاعات تماس خالی در سربرگ
 $core_path = $root . '/wordpress/wp-content/plugins/karsabt-core/karsabt-core.php';
 $docs_path = $root . '/wordpress/wp-content/plugins/karsabt-core/includes/class-karsabt-documents.php';
 $otp_path = $root . '/wordpress/wp-content/plugins/karsabt-core/includes/class-karsabt-otp.php';
+$customers_path = $root . '/wordpress/wp-content/plugins/karsabt-core/includes/admin-customers.php';
 $core = is_file($core_path) ? (string) file_get_contents($core_path) : '';
 $docs = is_file($docs_path) ? (string) file_get_contents($docs_path) : '';
 $otp = is_file($otp_path) ? (string) file_get_contents($otp_path) : '';
+$customers_admin = is_file($customers_path) ? (string) file_get_contents($customers_path) : '';
 
 karsabt_test('وجود افزونه مستقل Karsabt Core', is_file($root . '/wordpress/wp-content/plugins/karsabt-core/karsabt-core.php'));
 karsabt_test('محدودسازی ارسال سفارش عمومی', strpos($core, 'function karsabt_core_order_rate_limited()') !== false && strpos($core, 'if (karsabt_core_order_rate_limited())') !== false);
@@ -87,6 +89,13 @@ karsabt_test('پاسخ یکسان برای خطاهای تأیید OTP', strpos(
 karsabt_test('محدودسازی ارسال OTP بر اساس IP', strpos($otp, "ip_rate_limited('send'") !== false);
 karsabt_test('محدودسازی بررسی OTP بر اساس IP', strpos($otp, "ip_rate_limited('verify'") !== false);
 karsabt_test('محدودیت OTP برای هر شماره حفظ شده است', strpos($otp, 'MAX_SENDS_PER_HOUR = 5') !== false && strpos($otp, 'MAX_VERIFY_ATTEMPTS = 5') !== false);
+karsabt_test('ورود OTP فقط برای حساب مشتری عادی', strpos($core, 'function karsabt_core_is_customer_account') !== false && strpos($core, '!karsabt_core_is_customer_account($mobile_user)') !== false && strpos($core, '!karsabt_core_is_customer_account($user)') !== false);
+karsabt_test('تغییر شماره مشتری در تراکنش دیتابیس', strpos($core, 'function karsabt_core_update_customer_mobile') !== false && strpos($core, 'START TRANSACTION') !== false && strpos($core, 'FOR UPDATE') !== false && strpos($core, 'COMMIT') !== false && strpos($core, 'ROLLBACK') !== false);
+karsabt_test('تغییر شماره از پنل CRM از تابع همگام‌سازی ایندکس عبور می‌کند', strpos($customers_admin, 'karsabt_core_update_customer_mobile($mobile, $user_id)') !== false);
+karsabt_test('تغییر شماره موبایل تأیید قبلی را لغو می‌کند', strpos($core, "'_karsabt_mobile_verified', '0'") !== false && strpos($core, "'verified' => 0") !== false);
+karsabt_test('خطای ذخیره شمارنده IP باعث عبور OTP نمی‌شود', strpos($otp, 'return false === set_transient($key, $count + 1, $ttl)') !== false);
+karsabt_test('خطای ذخیره کد OTP به‌صورت بسته رد می‌شود', strpos($otp, 'otp_storage_failed') !== false && strpos($otp, 'set_transient($code_key, $payload, self::CODE_TTL)') !== false);
+karsabt_test('خطای ذخیره تلاش ناموفق OTP باعث حذف کد می‌شود', strpos($otp, 'delete_transient($transient_key)') !== false && strpos($otp, 'ثبت تلاش تأیید انجام نشد') !== false);
 karsabt_test('دریافت مدارک فقط از مسیر کاربران واردشده', strpos($docs, "add_action('admin_post_nopriv_karsabt_document_download'") === false && strpos($docs, "add_action('admin_post_karsabt_document_download'") !== false);
 karsabt_test('کنترل مالکیت مشتری برای بارگذاری مدارک', strpos($docs, 'get_post_meta($order_id, \'_karsabt_customer_user_id\', true) !== get_current_user_id()') !== false);
 karsabt_test('ذخیره مدارک خارج از web root', strpos($docs, 'KARSABT_PRIVATE_UPLOAD_DIR') !== false && strpos($docs, 'realpath(ABSPATH)') !== false);
