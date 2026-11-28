@@ -37,6 +37,7 @@ function get_transient($key) {
     return is_array($item) ? $item['value'] : false;
 }
 function set_transient($key, $value, $ttl = 0) {
+    if (!empty($GLOBALS['karsabt_test_fail_transient_writes'])) { return false; }
     $GLOBALS['karsabt_test_transients'][$key] = array(
         'value' => $value,
         'expires' => $GLOBALS['karsabt_test_time'] + (int) $ttl,
@@ -143,5 +144,25 @@ karsabt_assert(true === Karsabt_OTP_Service::verify($mobile, $persian_code), 'پ
 $GLOBALS['karsabt_test_transients'] = array();
 $GLOBALS['karsabt_test_provider'] = false;
 karsabt_assert('otp_provider_unavailable' === karsabt_error_code(Karsabt_OTP_Service::send($mobile)), 'عدم فعال‌سازی کد بدون درگاه پیامک');
+
+$GLOBALS['karsabt_test_transients'] = array();
+$GLOBALS['karsabt_test_provider'] = true;
+$GLOBALS['karsabt_test_fail_transient_writes'] = true;
+unset($_SERVER['REMOTE_ADDR']);
+karsabt_assert('otp_storage_failed' === karsabt_error_code(Karsabt_OTP_Service::send($mobile)), 'رد ارسال OTP در صورت شکست ذخیره کد');
+$GLOBALS['karsabt_test_fail_transient_writes'] = false;
+
+$GLOBALS['karsabt_test_transients'] = array();
+karsabt_assert(true === Karsabt_OTP_Service::send($mobile), 'ارسال برای آزمون شکست ذخیره تلاش ناموفق');
+$GLOBALS['karsabt_test_fail_transient_writes'] = true;
+karsabt_assert('otp_storage_failed' === karsabt_error_code(Karsabt_OTP_Service::verify($mobile, '000000')), 'رد تأیید در صورت شکست ذخیره شمارنده تلاش');
+$GLOBALS['karsabt_test_fail_transient_writes'] = false;
+
+$GLOBALS['karsabt_test_transients'] = array();
+$_SERVER['REMOTE_ADDR'] = '203.0.113.10';
+$GLOBALS['karsabt_test_fail_transient_writes'] = true;
+karsabt_assert('otp_ip_rate_limited' === karsabt_error_code(Karsabt_OTP_Service::send($mobile)), 'محدودسازی در صورت شکست ذخیره شمارنده IP');
+$GLOBALS['karsabt_test_fail_transient_writes'] = false;
+unset($_SERVER['REMOTE_ADDR']);
 
 echo "تمام آزمون‌های OTP با موفقیت اجرا شدند.\n";
