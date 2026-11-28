@@ -311,7 +311,7 @@ try {
     $assert(400 === $invalidUpload['status'], 'فایل با نوع غیرمجاز از مسیر HTTP رد می‌شود');
 
     $fakeImagePath = $root . '/fake.png';
-    file_put_contents($fakeImagePath, "\\x89PNG\\r\\n\\x1a\\n" . str_repeat('X', 128));
+    file_put_contents($fakeImagePath, "\x89PNG\r\n\x1a\n" . str_repeat('X', 128));
     $fakeImageUpload = $request($baseUrl . '/wp-admin/admin-post.php', $customerJar, 'POST', array(
         'action'=>'karsabt_document_upload','order_id'=>$orderId,
         'karsabt_docs_nonce'=>$docsNonce,'category'=>'identity','checklist_key'=>'',
