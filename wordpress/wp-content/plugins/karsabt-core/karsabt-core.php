@@ -522,6 +522,9 @@ function karsabt_core_update_customer_mobile($mobile, $user_id) {
             $wpdb->query('ROLLBACK');
             return false;
         }
+        if (function_exists('karsabt_audit_log')) {
+            karsabt_audit_log('mobile_changed', 'user', $user_id, 'شماره موبایل تغییر کرد؛ تأیید مجدد لازم است');
+        }
         return true;
     } catch (Throwable $error) {
         $wpdb->query('ROLLBACK');
@@ -1181,3 +1184,4 @@ require_once __DIR__ . '/includes/class-karsabt-service-forms.php';
 
 require_once __DIR__ . '/includes/admin-operations-dashboard.php';
 require_once __DIR__ . '/includes/class-karsabt-time-tracking.php';
+require_once __DIR__ . '/includes/class-karsabt-audit.php';
