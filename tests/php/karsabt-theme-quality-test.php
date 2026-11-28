@@ -156,6 +156,8 @@ karsabt_test('ممیزی محتوای پیام، مدارک و یادداشت م
 karsabt_test('سیاست نگهداری لاگ قابل تنظیم و محدود به بازه امن است', strpos($audit, 'KARSABT_AUDIT_RETENTION_DAYS') !== false && strpos($audit, 'max(30, min(3650') !== false && strpos($audit, 'karsabt_audit_daily_cleanup') !== false);
 karsabt_test('تغییرات وضعیت، مرحله و مسئول پرونده ثبت ممیزی می‌شوند', strpos($audit, 'added_post_meta') !== false && strpos($audit, 'updated_post_meta') !== false && strpos($audit, '_karsabt_order_status') !== false && strpos($audit, '_karsabt_assigned_user_id') !== false);
 karsabt_test('حذف پرونده و حساب کاربری در ممیزی ثبت می‌شود', strpos($audit, 'before_delete_post') !== false && strpos($audit, "add_action('delete_user'") !== false);
+karsabt_test('حذف حساب دارای پرونده یا فاکتور از پنل وردپرس مسدود می‌شود', strpos($audit, 'function karsabt_audit_protect_customer_history') !== false && strpos($audit, "return array('do_not_allow')") !== false && strpos($audit, '_karsabt_customer_user_id') !== false && strpos($audit, '_karsabt_invoice_customer_user_id') !== false);
+karsabt_test('پس از حذف مجاز حساب، شاخص موبایل یتیم باقی نمی‌ماند', strpos($audit, 'karsabt_core_mobile_index_table()') !== false && strpos($audit, "'user_id'=>absint($user_id)") !== false);
 karsabt_test('بارگذاری، دریافت و بررسی مدارک در ممیزی ثبت می‌شوند', strpos($docs, "karsabt_audit_log('document_uploaded'") !== false && strpos($docs, "karsabt_audit_log('document_downloaded'") !== false && strpos($docs, "karsabt_audit_log('document_reviewed'") !== false);
 karsabt_test('ثبت پرداخت و تغییر شماره مشتری در ممیزی ثبت می‌شوند', strpos($finance, "karsabt_audit_log('payment_created'") !== false && strpos($core, "karsabt_audit_log('mobile_changed'") !== false);
 
