@@ -192,7 +192,7 @@ function karsabt_docs_upload_handler() {
         wp_die('دسترسی به این درخواست مجاز نیست.', '', array('response'=>403));
     }
     $rate_key = 'karsabt_docs_up_' . get_current_user_id();
-    if (function_exists('karsabt_core_rate_limit_hit') && karsabt_core_rate_limit_hit($rate_key, 10, HOUR_IN_SECONDS)) {
+    if (!function_exists('karsabt_core_rate_limit_hit') || karsabt_core_rate_limit_hit($rate_key, 10, HOUR_IN_SECONDS)) {
         wp_die('سقف بارگذاری ساعتی تکمیل شده است یا سرویس محدودیت درخواست موقتاً در دسترس نیست.', '', array('response'=>429));
     }
     $dir = karsabt_docs_private_dir();
