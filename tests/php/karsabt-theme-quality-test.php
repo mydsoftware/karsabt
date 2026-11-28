@@ -111,9 +111,9 @@ $finance = is_file($finance_path) ? (string) file_get_contents($finance_path) : 
 karsabt_test('جلوگیری از مشاهده پرونده مشتری دیگر', strpos($customer_order, '_karsabt_customer_user_id') !== false && strpos($customer_order, '!== $user_id') !== false);
 karsabt_test('جلوگیری از ارسال پیام به پرونده مشتری دیگر', strpos($messages, '!== get_current_user_id()') !== false);
 karsabt_test('محدودیت اتمیک نرخ ارسال پیام مشتری', strpos($messages, 'karsabt_msg_rate_') !== false && strpos($messages, 'karsabt_core_rate_limit_hit($rate_key, 20, HOUR_IN_SECONDS)') !== false);
-karsabt_test('محدودیت اتمیک نرخ بارگذاری مدارک', strpos($documents, 'karsabt_docs_up_') !== false && strpos($documents, 'karsabt_core_rate_limit_hit($rate_key, 10, HOUR_IN_SECONDS)') !== false);
-karsabt_test('دسترسی کارشناس فقط به مدارک پرونده تخصیص‌یافته', strpos($documents, 'function karsabt_docs_user_can_access_order') !== false && strpos($documents, 'user_can($user_id, \'edit_post\', $order_id)') !== false);
-karsabt_test('بررسی و تأیید مدارک محدود به مدیر کل', strpos($documents, 'if (!$can_review) { wp_die(\'فقط مدیر کل اجازه بررسی و تأیید مدارک را دارد.') !== false);
+karsabt_test('محدودیت اتمیک نرخ بارگذاری مدارک', strpos($docs, 'karsabt_docs_up_') !== false && strpos($docs, 'karsabt_core_rate_limit_hit($rate_key, 10, HOUR_IN_SECONDS)') !== false);
+karsabt_test('دسترسی کارشناس فقط به مدارک پرونده تخصیص‌یافته', strpos($docs, 'function karsabt_docs_user_can_access_order') !== false && strpos($docs, 'user_can($user_id, \'edit_post\', $order_id)') !== false);
+karsabt_test('بررسی و تأیید مدارک محدود به مدیر کل', strpos($docs, 'if (!$can_review) { wp_die(\'فقط مدیر کل اجازه بررسی و تأیید مدارک را دارد.') !== false);
 karsabt_test('محدودیت تعداد پیام هر پرونده', strpos($messages, 'count($messages) >= 200') !== false);
 karsabt_test('قفل دیتابیس برای جلوگیری از بازنویسی پیام‌های هم‌زمان', strpos($messages, 'SELECT GET_LOCK') !== false && strpos($messages, 'SELECT RELEASE_LOCK') !== false);
 karsabt_test('هر دو مسیر ارسال مشتری و مدیر از قفل گفت‌وگو استفاده می‌کنند', substr_count($messages, 'karsabt_messages_lock($order_id)') >= 2);
