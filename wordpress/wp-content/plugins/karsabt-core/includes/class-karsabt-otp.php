@@ -54,8 +54,8 @@ final class Karsabt_OTP_Service {
         try {
             $count = (int) get_transient($key);
             if ($count >= $limit) { return true; }
-            set_transient($key, $count + 1, $ttl);
-            return false;
+            // اگر ذخیره شمارنده شکست بخورد، ارسال/تأیید را مجاز نکن.
+            return false === set_transient($key, $count + 1, $ttl);
         } finally {
             self::release_lock($lock);
         }
@@ -99,9 +99,17 @@ final class Karsabt_OTP_Service {
             'attempts' => 0,
             'expires_at' => time() + self::CODE_TTL,
         );
-        set_transient(self::transient_key('code', $mobile), $payload, self::CODE_TTL);
-        set_transient($cooldown_key, 1, self::RESEND_DELAY);
-        set_transient($hour_key, $sent + 1, HOUR_IN_SECONDS);
+        $code_key = self::transient_key('code', $mobile);
+        if (false === set_transient($code_key, $payload, self::CODE_TTL)) {
+            delete_transient($code_key);
+            return new WP_Error('otp_storage_failed', 'ذخیره امن کد تأیید انجام نشد. دوباره درخواست کنید.');
+        }
+        if (false === set_transient($cooldown_key, 1, self::RESEND_DELAY) ||
+            false === set_transient($hour_key, $sent + 1, HOUR_IN_SECONDS)) {
+            delete_transient($code_key);
+            delete_transient($cooldown_key);
+            return new WP_Error('otp_storage_failed', 'ثبت محدودیت ارسال کد انجام نشد. دوباره درخواست کنید.');
+        }
         return true;
         } finally {
             self::release_lock($mobile_lock);
@@ -149,7 +157,11 @@ final class Karsabt_OTP_Service {
                 return new WP_Error('otp_attempts_exceeded', 'تعداد تلاش‌های مجاز به پایان رسیده است.');
             } else {
                 $remaining_ttl = max(1, (int) $payload['expires_at'] - time());
-                set_transient($transient_key, $payload, $remaining_ttl);
+                if (false === set_transient($transient_key, $payload, $remaining_ttl)) {
+                    // شمارنده تلاش ناموفق نباید در صورت خطای ذخیره‌سازی دور زده شود.
+                    delete_transient($transient_key);
+                    return new WP_Error('otp_storage_failed', 'ثبت تلاش تأیید انجام نشد. کد را دوباره درخواست کنید.');
+                }
             }
             return new WP_Error('invalid_otp', 'کد تأیید اشتباه است.');
         }
