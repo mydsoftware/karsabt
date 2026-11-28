@@ -35,26 +35,16 @@ function karsabt_core_render_customer_admin_page() {
         if (!$user || '' === $name || strlen($name) > 300 || !$mobile) {
             $notice = '<div class="notice notice-error"><p>اطلاعات واردشده معتبر نیست.</p></div>';
         } else {
-            $matches = get_users(array(
-                'meta_key' => '_karsabt_mobile',
-                'meta_value' => $mobile,
-                'exclude' => array($user_id),
-                'number' => 1,
-                'fields' => 'ID',
-            ));
-            if ($matches) {
-                $notice = '<div class="notice notice-error"><p>این شماره موبایل به مشتری دیگری اختصاص دارد.</p></div>';
+            $old_mobile = karsabt_core_normalize_mobile(get_user_meta($user_id, '_karsabt_mobile', true));
+            $mobile_updated = ($old_mobile === $mobile) ? true : karsabt_core_update_customer_mobile($mobile, $user_id);
+            if (!$mobile_updated) {
+                $notice = '<div class="notice notice-error"><p>این شماره به مشتری دیگری اختصاص دارد یا به‌روزرسانی امن آن انجام نشد. اطلاعات قبلی حفظ شد.</p></div>';
             } else {
                 $updated = wp_update_user(array('ID' => $user_id, 'display_name' => $name, 'nickname' => $name));
                 if (is_wp_error($updated)) {
-                    $notice = '<div class="notice notice-error"><p>ذخیره اطلاعات انجام نشد.</p></div>';
+                    $notice = '<div class="notice notice-error"><p>ذخیره نام مشتری انجام نشد.</p></div>';
                 } else {
-                    $old_mobile = get_user_meta($user_id, '_karsabt_mobile', true);
-                    update_user_meta($user_id, '_karsabt_mobile', $mobile);
-                    if ($old_mobile !== $mobile) {
-                        update_user_meta($user_id, '_karsabt_mobile_verified', '0');
-                    }
-                    $notice = '<div class="notice notice-success"><p>اطلاعات مشتری ذخیره شد. در صورت تغییر موبایل، تأیید شماره لغو شد.</p></div>';
+                    $notice = '<div class="notice notice-success"><p>اطلاعات مشتری ذخیره شد. در صورت تغییر موبایل، تأیید شماره لغو شد و مشتری باید شماره جدید را با کد پیامکی تأیید کند.</p></div>';
                 }
             }
         }
