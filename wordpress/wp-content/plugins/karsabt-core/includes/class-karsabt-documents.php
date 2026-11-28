@@ -296,6 +296,9 @@ function karsabt_docs_upload_handler() {
         if (is_file($destination)) { @unlink($destination); }
         wp_die('ثبت اطلاعات مدرک انجام نشد؛ فایل ذخیره‌شده حذف شد.', '', array('response'=>500));
     }
+    if (function_exists('karsabt_audit_log')) {
+        karsabt_audit_log('document_uploaded', 'order', $order_id, 'بارگذاری مدرک جدید');
+    }
     wp_safe_redirect(wp_get_referer() ?: home_url('/')); exit;
 }
 add_action('admin_post_karsabt_document_upload', 'karsabt_docs_upload_handler');
@@ -371,6 +374,9 @@ function karsabt_docs_download_handler() {
     header('Content-Type: ' . $allowed_mimes[$extension]);
     header('Content-Length: ' . filesize($path));
     header('Content-Disposition: attachment; filename="document.' . pathinfo($path, PATHINFO_EXTENSION) . '"');
+    if (function_exists('karsabt_audit_log')) {
+        karsabt_audit_log('document_downloaded', 'order', $order_id, 'دریافت مدرک خصوصی');
+    }
     readfile($path); exit;
 }
 // دریافت مدارک فقط برای کاربران واردشده و پس از کنترل مالکیت سفارش مجاز است.
@@ -409,6 +415,9 @@ function karsabt_docs_admin_page() {
                     }
                 }
                 if (update_post_meta($order_id, '_karsabt_documents', $docs)) {
+                    if (function_exists('karsabt_audit_log')) {
+                        karsabt_audit_log('document_reviewed', 'order', $order_id, 'وضعیت بررسی مدرک تغییر کرد');
+                    }
                     $notice = '<div class="notice notice-success"><p>وضعیت بررسی ذخیره شد.</p></div>';
                 } else {
                     $notice = '<div class="notice notice-error"><p>ذخیره تغییرات انجام نشد.</p></div>';
