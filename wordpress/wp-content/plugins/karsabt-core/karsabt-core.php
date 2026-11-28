@@ -639,7 +639,7 @@ function karsabt_core_customer_auth() {
                     } else {
                         update_user_meta($user->ID, '_karsabt_mobile_verified', '1');
                         wp_set_current_user($user->ID);
-                        wp_set_auth_cookie($user->ID, true, is_ssl());
+                        wp_set_auth_cookie($user->ID, false, is_ssl());
                         wp_safe_redirect(get_permalink());
                         exit;
                     }
@@ -669,7 +669,7 @@ function karsabt_core_customer_auth() {
                                 $notice = '<p class="karsabt-form-notice karsabt-form-error" role="alert">این شماره قبلاً به حساب دیگری اختصاص یافته است. وارد حساب خود شوید.</p>';
                             } else {
                             wp_set_current_user($user_id);
-                            wp_set_auth_cookie($user_id, true, is_ssl());
+                            wp_set_auth_cookie($user_id, false, is_ssl());
                             wp_safe_redirect(get_permalink());
                             exit;
                             }
