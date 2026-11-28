@@ -327,11 +327,9 @@ function karsabt_core_order_tracking() {
         } else {
             $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
             $rate_key = 'karsabt_track_' . hash('sha256', $ip);
-            $attempts = (int) get_transient($rate_key);
-            if ($attempts >= 8) {
+            if (karsabt_core_rate_limit_hit($rate_key, 8, 15 * MINUTE_IN_SECONDS)) {
                 $result_html = '<p class="karsabt-form-notice karsabt-form-error" role="alert">تعداد تلاش‌ها بیش از حد مجاز است. ۱۵ دقیقه دیگر دوباره تلاش کنید.</p>';
             } else {
-                set_transient($rate_key, $attempts + 1, 15 * MINUTE_IN_SECONDS);
                 $code = isset($_POST['tracking_code']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['tracking_code']))) : '';
                 if (!preg_match('/^KRS-[0-9]{4,6}-[0-9]{6}-[A-Z0-9]{4}$/', $code)) {
                     $result_html = '<p class="karsabt-form-notice karsabt-form-error" role="alert">کد پیگیری معتبر نیست یا درخواستی با این کد پیدا نشد.</p>';
@@ -474,32 +472,50 @@ function karsabt_core_claim_mobile($mobile, $user_id) {
 }
 
 /**
- * محدودیت تلاش برای فرم‌های ورود و ثبت‌نام.
+ * افزایش اتمیک شمارنده محدودیت درخواست با قفل مشترک دیتابیس.
+ * در صورت در دسترس نبودن قفل یا ذخیره‌سازی، عملیات حساس به‌صورت fail-closed رد می‌شود.
+ *
+ * @return bool آیا سقف درخواست رد شده یا شمارنده با خطا مواجه شده است؟
  */
-/**
- * محدودسازی ثبت سفارش عمومی برای کاهش هرزنامه و فشار روی پایگاه داده.
- * محدودیت بر مبنای IP و به‌صورت best-effort با Transient وردپرس است.
- */
+function karsabt_core_rate_limit_hit($key, $limit, $ttl) {
+    global $wpdb;
+
+    $key = (string) $key;
+    $limit = absint($limit);
+    $ttl = absint($ttl);
+    if ('' === $key || !$limit || !$ttl) {
+        return true;
+    }
+
+    $lock_name = 'krs_rate_' . substr(hash('sha256', $key), 0, 48);
+    $acquired = $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, %d)', $lock_name, 2));
+    if ('1' !== (string) $acquired) {
+        return true;
+    }
+
+    try {
+        $attempts = (int) get_transient($key);
+        if ($attempts >= $limit) {
+            return true;
+        }
+        return false === set_transient($key, $attempts + 1, $ttl);
+    } finally {
+        $wpdb->get_var($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $lock_name));
+    }
+}
+
+/** محدودسازی ثبت سفارش عمومی بر مبنای IP و به‌شکل اتمیک. */
 function karsabt_core_order_rate_limited() {
     $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
     $key = 'karsabt_order_submit_' . hash('sha256', $ip);
-    $attempts = (int) get_transient($key);
-    if ($attempts >= 5) {
-        return true;
-    }
-    set_transient($key, $attempts + 1, 15 * MINUTE_IN_SECONDS);
-    return false;
+    return karsabt_core_rate_limit_hit($key, 5, 15 * MINUTE_IN_SECONDS);
 }
 
+/** محدودسازی تلاش‌های ورود و ثبت‌نام بر مبنای IP و به‌شکل اتمیک. */
 function karsabt_core_auth_rate_limited() {
     $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
     $key = 'karsabt_auth_' . hash('sha256', $ip);
-    $attempts = (int) get_transient($key);
-    if ($attempts >= 8) {
-        return true;
-    }
-    set_transient($key, $attempts + 1, 15 * MINUTE_IN_SECONDS);
-    return false;
+    return karsabt_core_rate_limit_hit($key, 8, 15 * MINUTE_IN_SECONDS);
 }
 
 /**
