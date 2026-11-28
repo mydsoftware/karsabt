@@ -149,10 +149,10 @@ karsabt_test('وضعیت پرونده بدون فیلد ارسالی ناخوا�
 karsabt_test('REST API عمومی برای نوع محتوای پرونده غیرفعال است', strpos($core, "'show_in_rest'        => false") !== false);
 karsabt_test('ماژول ممیزی در هسته وردپرس بارگذاری می‌شود', strpos($core, "class-karsabt-audit.php") !== false && strpos($audit, 'function karsabt_audit_log') !== false);
 karsabt_test('جدول ممیزی با کلیدهای جست‌وجو و InnoDB ساخته می‌شود', strpos($audit, 'karsabt_audit_log') !== false && strpos($audit, 'KEY created_at') !== false && strpos($audit, 'dbDelta($sql)') !== false);
-karsabt_test('ثبت رویداد ممیزی فقط از فهرست رویدادهای مجاز انجام می‌شود', strpos($audit, "in_array($event, $allowed, true)") !== false);
+karsabt_test('ثبت رویداد ممیزی فقط از فهرست رویدادهای مجاز انجام می‌شود', strpos($audit, 'in_array($event, $allowed, true)') !== false);
 karsabt_test('گزارش ممیزی فقط برای مدیر کل قابل مشاهده است', strpos($audit, "add_submenu_page(") !== false && strpos($audit, "'manage_options'") !== false && strpos($audit, "current_user_can('manage_options')") !== false);
-karsabt_test('ممیزی از ذخیره IP خام خودداری و آن را HMAC می‌کند', strpos($audit, "hash_hmac('sha256', $ip, wp_salt('auth'))") !== false && strpos($audit, "'ip_hash'=>$ip_hash") !== false);
-karsabt_test('ممیزی محتوای پیام، مدارک و یادداشت مشتری را ذخیره نمی‌کند', strpos($audit, "'detail'=>sanitize_text_field($detail)") !== false && strpos($audit, "message_body") === false && strpos($audit, "customer_phone") === false);
+karsabt_test('ممیزی از ذخیره IP خام خودداری و آن را HMAC می‌کند', strpos($audit, "hash_hmac('sha256', \$ip, wp_salt('auth'))") !== false && strpos($audit, "'ip_hash'=>\$ip_hash") !== false);
+karsabt_test('ممیزی محتوای پیام، مدارک و یادداشت مشتری را ذخیره نمی‌کند', strpos($audit, "'detail'=>sanitize_text_field(\$detail)") !== false && strpos($audit, "message_body") === false && strpos($audit, "customer_phone") === false);
 karsabt_test('سیاست نگهداری لاگ قابل تنظیم و محدود به بازه امن است', strpos($audit, 'KARSABT_AUDIT_RETENTION_DAYS') !== false && strpos($audit, 'max(30, min(3650') !== false && strpos($audit, 'karsabt_audit_daily_cleanup') !== false);
 karsabt_test('تغییرات وضعیت، مرحله و مسئول پرونده ثبت ممیزی می‌شوند', strpos($audit, 'added_post_meta') !== false && strpos($audit, 'updated_post_meta') !== false && strpos($audit, '_karsabt_order_status') !== false && strpos($audit, '_karsabt_assigned_user_id') !== false);
 karsabt_test('حذف پرونده و حساب کاربری در ممیزی ثبت می‌شود', strpos($audit, 'before_delete_post') !== false && strpos($audit, "add_action('delete_user'") !== false);
