@@ -874,9 +874,17 @@ function karsabt_core_missing_required_documents($order_id) {
     return $missing;
 }
 
-/** کنترل مرکزی تغییر متای وضعیت؛ مسیرهای update_post_meta نیز از این کنترل عبور می‌کنند. */
-function karsabt_core_guard_completed_status_meta($check, $object_id, $meta_key, $meta_value, $extra = null) {
-    if ('_karsabt_order_status' !== $meta_key || 'completed' !== $meta_value || 'karsabt_order' !== get_post_type($object_id)) { return $check; }
+/** کنترل مرکزی تغییر وضعیت؛ مسیرهای update_post_meta و add_post_meta نیز از این کنترل عبور می‌کنند. */
+function karsabt_core_guard_order_status_meta($check, $object_id, $meta_key, $meta_value, $extra = null) {
+    if ('_karsabt_order_status' !== $meta_key || 'karsabt_order' !== get_post_type($object_id)) { return $check; }
+
+    // مختومه‌کردن پرونده فقط در اختیار مدیر کل است؛ حتی اگر مسیر دیگری متا را تغییر دهد.
+    if ('rejected' === $meta_value && !current_user_can('manage_options')) {
+        return false;
+    }
+
+    if ('completed' !== $meta_value) { return $check; }
+
     $missing = karsabt_core_missing_required_documents($object_id);
     if ($missing) {
         $user_id = get_current_user_id();
@@ -885,8 +893,8 @@ function karsabt_core_guard_completed_status_meta($check, $object_id, $meta_key,
     }
     return $check;
 }
-add_filter('update_post_metadata', 'karsabt_core_guard_completed_status_meta', 10, 5);
-add_filter('add_post_metadata', 'karsabt_core_guard_completed_status_meta', 10, 5);
+add_filter('update_post_metadata', 'karsabt_core_guard_order_status_meta', 10, 5);
+add_filter('add_post_metadata', 'karsabt_core_guard_order_status_meta', 10, 5);
 
 function karsabt_core_status_guard_admin_notice() {
     $user_id = get_current_user_id();
