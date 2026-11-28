@@ -832,6 +832,7 @@ function karsabt_core_render_order_meta_box($post) {
             <?php endforeach; ?>
         </ol>
     <?php else : ?><p>فعالیتی ثبت نشده است.</p><?php endif; ?>
+    <?php if (current_user_can('manage_options')) : ?>
     <hr>
     <h3>یادداشت‌های داخلی (فقط مدیران)</h3>
     <?php if ($notes) : ?>
@@ -844,6 +845,7 @@ function karsabt_core_render_order_meta_box($post) {
     <p><label for="karsabt-internal-note">افزودن یادداشت جدید</label></p>
     <textarea id="karsabt-internal-note" name="karsabt_internal_note" rows="3" maxlength="2000" class="widefat"></textarea>
     <p class="description">این یادداشت به مشتری نمایش داده نمی‌شود.</p>
+    <?php endif; ?>
     <?php
 }
 
@@ -954,9 +956,7 @@ function karsabt_core_save_order_meta($post_id) {
         }
     }
 
-    $status = isset($_POST['karsabt_order_status']) ? sanitize_key(wp_unslash($_POST['karsabt_order_status'])) : 'new';
     $statuses = karsabt_core_statuses();
-
     $old_status = get_post_meta($post_id, '_karsabt_order_status', true);
 
     $service = get_post_meta($post_id, '_karsabt_service', true);
@@ -1006,7 +1006,14 @@ function karsabt_core_save_order_meta($post_id) {
         update_post_meta($post_id, '_karsabt_activity_log', $activity);
     }
 
-    if (isset($statuses[$status]) && $status !== $old_status) {
+    if (isset($_POST['karsabt_order_status'])) {
+        $status = sanitize_key(wp_unslash($_POST['karsabt_order_status']));
+    } else {
+        $status = $old_status;
+    }
+
+    if (isset($statuses[$status]) && $status !== $old_status &&
+        ('rejected' !== $status || current_user_can('manage_options'))) {
         $missing_required = ('completed' === $status) ? karsabt_core_missing_required_documents($post_id) : array();
         if (!$missing_required && update_post_meta($post_id, '_karsabt_order_status', $status)) {
             $history = get_post_meta($post_id, '_karsabt_status_history', true);
@@ -1023,9 +1030,10 @@ function karsabt_core_save_order_meta($post_id) {
         }
     }
 
-    if (isset($_POST['karsabt_internal_note'])) {
+    // یادداشت داخلی شامل اطلاعات مدیریتی است و فقط مدیر کل حق ثبت آن را دارد.
+    if (current_user_can('manage_options') && isset($_POST['karsabt_internal_note'])) {
         $note_text = sanitize_textarea_field(wp_unslash($_POST['karsabt_internal_note']));
-        if ('' !== trim($note_text) && strlen($note_text) <= 8000) {
+        if ('' !== trim($note_text) && strlen($note_text) <= 2000) {
             $notes = get_post_meta($post_id, '_karsabt_internal_notes', true);
             $notes = is_array($notes) ? $notes : array();
             $user = wp_get_current_user();
