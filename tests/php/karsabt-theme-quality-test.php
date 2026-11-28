@@ -129,7 +129,7 @@ karsabt_test('جلوگیری از تغییر وضعیت مختومه توسط ک
 karsabt_test('جلوگیری از مختومه‌کردن پرونده از فرم ویرایش توسط کارشناس', strpos($core, '(\'rejected\' !== $status || current_user_can(\'manage_options\'))') !== false);
 karsabt_test('یادداشت داخلی فقط برای مدیر کل نمایش داده می‌شود', strpos($core, '$can_manage_notes = current_user_can(\'manage_options\')') !== false && strpos($core, 'if ($can_manage_notes) :') !== false);
 karsabt_test('ثبت یادداشت داخلی فقط با مجوز مدیر کل', strpos($core, 'current_user_can(\'manage_options\') && isset($_POST[\'karsabt_internal_note\'])') !== false);
-karsabt_test('وضعیت پرونده بدون فیلد ارسالی ناخواسته بازنویسی نمی‌شود', strpos($core, '$status = $old_status;') !== false && strpos($core, "if (isset($_POST['karsabt_order_status']))") !== false);
+karsabt_test('وضعیت پرونده بدون فیلد ارسالی ناخواسته بازنویسی نمی‌شود', strpos($core, '$status = $old_status;') !== false && strpos($core, 'if (isset($_POST[\'karsabt_order_status\']))') !== false);
 karsabt_test('REST API عمومی برای نوع محتوای پرونده غیرفعال است', strpos($core, "'show_in_rest'        => false") !== false);
 
 
