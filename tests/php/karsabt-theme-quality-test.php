@@ -90,6 +90,7 @@ karsabt_test('محدودسازی ارسال OTP بر اساس IP', strpos($otp, 
 karsabt_test('محدودسازی بررسی OTP بر اساس IP', strpos($otp, "ip_rate_limited('verify'") !== false);
 karsabt_test('محدودیت OTP برای هر شماره حفظ شده است', strpos($otp, 'MAX_SENDS_PER_HOUR = 5') !== false && strpos($otp, 'MAX_VERIFY_ATTEMPTS = 5') !== false);
 karsabt_test('ورود OTP فقط برای حساب مشتری عادی', strpos($core, 'function karsabt_core_is_customer_account') !== false && strpos($core, '!karsabt_core_is_customer_account($mobile_user)') !== false && strpos($core, '!karsabt_core_is_customer_account($user)') !== false);
+karsabt_test('نشست OTP بدون ماندگاری خودکار ایجاد می‌شود', strpos($core, 'wp_set_auth_cookie($user->ID, false, is_ssl())') !== false && strpos($core, 'wp_set_auth_cookie($user_id, false, is_ssl())') !== false);
 karsabt_test('تغییر شماره مشتری در تراکنش دیتابیس', strpos($core, 'function karsabt_core_update_customer_mobile') !== false && strpos($core, 'START TRANSACTION') !== false && strpos($core, 'FOR UPDATE') !== false && strpos($core, 'COMMIT') !== false && strpos($core, 'ROLLBACK') !== false);
 karsabt_test('تغییر شماره از پنل CRM از تابع همگام‌سازی ایندکس عبور می‌کند', strpos($customers_admin, 'karsabt_core_update_customer_mobile($mobile, $user_id)') !== false);
 karsabt_test('تغییر شماره موبایل تأیید قبلی را لغو می‌کند', strpos($core, "'_karsabt_mobile_verified', '0'") !== false && strpos($core, "'verified' => 0") !== false);
