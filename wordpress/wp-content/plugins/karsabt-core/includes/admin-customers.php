@@ -149,3 +149,6 @@ function karsabt_core_render_customer_admin_page() {
     }
     echo '</div>';
 }
+
+
+require_once __DIR__ . '/class-karsabt-crm.php';
