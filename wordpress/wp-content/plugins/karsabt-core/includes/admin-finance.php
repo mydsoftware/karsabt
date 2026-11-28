@@ -200,6 +200,9 @@ function karsabt_finance_render_payments() {
                 ), array('%d','%d','%s','%s','%s','%d','%s'));
                 if (false !== $inserted) {
                     $wpdb->query('COMMIT');
+                    if (function_exists('karsabt_audit_log')) {
+                        karsabt_audit_log('payment_created', 'invoice', $invoice_id, 'پرداخت جدید ثبت شد');
+                    }
                     $notice = '<div class="notice notice-success"><p>پرداخت ثبت شد.</p></div>';
                 } else {
                     $wpdb->query('ROLLBACK');
