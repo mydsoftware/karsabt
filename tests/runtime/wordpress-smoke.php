@@ -32,6 +32,16 @@ $assert(get_role('karsabt_case_worker') instanceof WP_Role, 'نقش کارشنا
 $assert(function_exists('karsabt_finance_table'), 'ماژول مالی بارگذاری شده است');
 $assert(function_exists('karsabt_messages_lock'), 'قفل پیام‌ها در دسترس است');
 $assert(function_exists('karsabt_docs_lock'), 'قفل مدارک در دسترس است');
+$assert(function_exists('karsabt_core_rate_limit_hit'), 'محدودکننده اتمیک درخواست‌ها بارگذاری شده است');
+
+if (function_exists('karsabt_core_rate_limit_hit')) {
+    $rateKey = 'karsabt_ci_rate_' . wp_generate_uuid4();
+    delete_transient($rateKey);
+    $assert(false === karsabt_core_rate_limit_hit($rateKey, 2, 60), 'درخواست اول در محدوده مجاز پذیرفته می‌شود');
+    $assert(false === karsabt_core_rate_limit_hit($rateKey, 2, 60), 'درخواست دوم تا سقف مجاز پذیرفته می‌شود');
+    $assert(true === karsabt_core_rate_limit_hit($rateKey, 2, 60), 'درخواست سوم پس از رسیدن به سقف رد می‌شود');
+    delete_transient($rateKey);
+}
 
 global $wpdb;
 $tables = array(
