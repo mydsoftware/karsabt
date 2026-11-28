@@ -51,6 +51,46 @@ function karsabt_docs_private_dir() {
     return $real_dir;
 }
 
+/**
+ * اعتبارسنجی محتوای واقعی فایل؛ پسوند و MIME ارسالی مرورگر قابل اعتماد نیست.
+ * برای تصویرها، MIME، ساختار قابل‌خواندن و ابعاد محدود بررسی می‌شود.
+ */
+function karsabt_docs_validate_file_content($path) {
+    if (!is_string($path) || '' === $path || !is_file($path) || !is_readable($path)) {
+        return false;
+    }
+
+    $size = filesize($path);
+    if (false === $size || $size < 8 || $size > 5 * 1024 * 1024 || !class_exists('finfo')) {
+        return false;
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($path);
+    if ('application/pdf' === $mime) {
+        $handle = @fopen($path, 'rb');
+        if (!$handle) { return false; }
+        $signature = fread($handle, 5);
+        fclose($handle);
+        return '%PDF-' === $signature ? 'application/pdf' : false;
+    }
+
+    if (in_array($mime, array('image/jpeg', 'image/png'), true)) {
+        $image = @getimagesize($path);
+        if (!is_array($image) || !isset($image[0], $image[1], $image['mime']) || $mime !== $image['mime']) {
+            return false;
+        }
+        $width = (int) $image[0];
+        $height = (int) $image[1];
+        if ($width < 1 || $height < 1 || $width > 12000 || $height > 12000 || ($width * $height) > 40000000) {
+            return false;
+        }
+        return $mime;
+    }
+
+    return false;
+}
+
 function karsabt_docs_default_checklists() {
     return array(
         'company' => array('!مدارک هویتی شرکا یا سهامداران','!اطلاعات تماس متقاضی','اطلاعات یا مدارک مربوط به نشانی شرکت','مدارک یا اطلاعات تکمیلی موضوع فعالیت'),
@@ -201,11 +241,9 @@ function karsabt_docs_upload_handler() {
     if (!empty($file['error']) || (int)$file['size'] < 1 || (int)$file['size'] > 5 * 1024 * 1024 || !is_uploaded_file($file['tmp_name'])) {
         wp_die('فایل نامعتبر است یا از محدودیت ۵ مگابایت بیشتر است.', '', array('response'=>400));
     }
-    if (!class_exists('finfo')) { wp_die('بررسی نوع واقعی فایل روی سرور فعال نیست.', '', array('response'=>500)); }
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = $finfo->file($file['tmp_name']);
+    $mime = karsabt_docs_validate_file_content($file['tmp_name']);
     $allowed = array('application/pdf'=>'pdf','image/jpeg'=>'jpg','image/png'=>'png');
-    if (!isset($allowed[$mime])) { wp_die('فقط فایل PDF، JPG و PNG پذیرفته می‌شود.', '', array('response'=>400)); }
+    if (!$mime || !isset($allowed[$mime])) { wp_die('فقط فایل PDF، JPG و PNG معتبر پذیرفته می‌شود.', '', array('response'=>400)); }
     $category = sanitize_key(wp_unslash($_POST['category'] ?? ''));
     if (!isset(karsabt_docs_categories()[$category])) { wp_die('دسته‌بندی معتبر نیست.', '', array('response'=>400)); }
     $checklist_key = sanitize_text_field(wp_unslash($_POST['checklist_key'] ?? ''));
