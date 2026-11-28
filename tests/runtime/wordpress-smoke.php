@@ -104,6 +104,12 @@ if (!is_wp_error($staffId) && !is_wp_error($customerId)) {
     if (!is_wp_error($orderA) && !is_wp_error($orderB)) {
         update_post_meta($orderA, '_karsabt_assigned_user_id', $staffId);
         update_post_meta($orderB, '_karsabt_assigned_user_id', $customerId);
+        $assert(function_exists('karsabt_docs_user_can_access_order'), 'کنترل دسترسی دریافت مدارک بارگذاری شده است');
+        if (function_exists('karsabt_docs_user_can_access_order')) {
+            $assert(true === karsabt_docs_user_can_access_order($orderA, $staffId), 'کارشناس مسئول به مدارک پرونده تخصیص‌یافته دسترسی دارد');
+            $assert(false === karsabt_docs_user_can_access_order($orderB, $staffId), 'کارشناس به مدارک پرونده تخصیص‌نیافته دسترسی ندارد');
+            $assert(false === karsabt_docs_user_can_access_order($orderA, $customerId), 'مشتری دیگر از کنترل دسترسی مدارک عبور نمی‌کند');
+        }
         if (!user_can($staffId, 'edit_post', $orderA)) {
             $debugUser = get_user_by('id', $staffId);
             fwrite(STDERR, '[جزئیات] نقش=' . implode(',', (array) $debugUser->roles)
