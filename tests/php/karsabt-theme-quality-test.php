@@ -100,6 +100,9 @@ karsabt_test('خطای ذخیره تلاش ناموفق OTP باعث حذف کد
 karsabt_test('دریافت مدارک فقط از مسیر کاربران واردشده', strpos($docs, "add_action('admin_post_nopriv_karsabt_document_download'") === false && strpos($docs, "add_action('admin_post_karsabt_document_download'") !== false);
 karsabt_test('کنترل مالکیت مشتری برای بارگذاری مدارک', strpos($docs, 'get_post_meta($order_id, \'_karsabt_customer_user_id\', true) !== get_current_user_id()') !== false);
 karsabt_test('ذخیره مدارک خارج از web root', strpos($docs, 'KARSABT_PRIVATE_UPLOAD_DIR') !== false && strpos($docs, 'realpath(ABSPATH)') !== false);
+karsabt_test('اعتبارسنجی امضای PDF و ساختار واقعی تصویرها', strpos($docs, 'function karsabt_docs_validate_file_content') !== false && strpos($docs, "'%PDF-' === $signature") !== false && strpos($docs, 'getimagesize($path)') !== false);
+karsabt_test('محدودیت ابعاد و تعداد پیکسل تصویرهای ارسالی', strpos($docs, '$width > 12000') !== false && strpos($docs, '($width * $height) > 40000000') !== false);
+karsabt_test('مسیر بارگذاری فقط پس از اعتبارسنجی محتوای واقعی فایل ادامه می‌یابد', strpos($docs, '$mime = karsabt_docs_validate_file_content($file[\'tmp_name\'])') !== false);
 karsabt_test('محدودیت نوع و اندازه مدارک', strpos($docs, 'FILEINFO_MIME_TYPE') !== false && strpos($docs, '5 * 1024 * 1024') !== false);
 karsabt_test('قفل دیتابیس برای تغییرات هم‌زمان مدارک', strpos($docs, 'SELECT GET_LOCK') !== false && strpos($docs, 'SELECT RELEASE_LOCK') !== false);
 karsabt_test('بارگذاری و بررسی مدیریتی مدارک از قفل پرونده استفاده می‌کنند', substr_count($docs, 'karsabt_docs_lock($order_id)') >= 2);
