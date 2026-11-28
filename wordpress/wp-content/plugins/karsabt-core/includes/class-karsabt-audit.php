@@ -62,8 +62,35 @@ function karsabt_audit_before_delete_post($post_id, $post) {
 }
 add_action('before_delete_post', 'karsabt_audit_before_delete_post', 10, 2);
 
+/**
+ * حذف حساب از پنل وردپرس نباید پیوند پرونده‌ها/فاکتورهای قبلی را یتیم کند.
+ * تا زمان اجرای گردش‌کار ناشناس‌سازی، حساب دارای سابقه مالی/پرونده قابل حذف نیست.
+ */
+function karsabt_audit_protect_customer_history($caps, $cap, $user_id, $args) {
+    if ('delete_user' !== $cap || empty($args[0])) { return $caps; }
+    $target_id = absint($args[0]);
+    $target = get_user_by('id', $target_id);
+    if (!$target || !in_array('subscriber', (array) $target->roles, true)) { return $caps; }
+    global $wpdb;
+    $has_order = $wpdb->get_var($wpdb->prepare(
+        "SELECT pm.post_id FROM {$wpdb->postmeta} pm INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id WHERE pm.meta_key = %s AND pm.meta_value = %s AND p.post_type = %s LIMIT 1",
+        '_karsabt_customer_user_id', (string) $target_id, 'karsabt_order'
+    ));
+    $has_invoice = $wpdb->get_var($wpdb->prepare(
+        "SELECT pm.post_id FROM {$wpdb->postmeta} pm INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id WHERE pm.meta_key = %s AND pm.meta_value = %s AND p.post_type = %s LIMIT 1",
+        '_karsabt_invoice_customer_user_id', (string) $target_id, 'karsabt_invoice'
+    ));
+    if ($has_order || $has_invoice) { return array('do_not_allow'); }
+    return $caps;
+}
+add_filter('map_meta_cap', 'karsabt_audit_protect_customer_history', 20, 4);
+
 function karsabt_audit_deleted_user($user_id, $reassign, $user) {
-    karsabt_audit_log('customer_deleted', 'user', $user_id, 'حذف حساب کاربری');
+    global $wpdb;
+    if (function_exists('karsabt_core_mobile_index_table')) {
+        $wpdb->delete(karsabt_core_mobile_index_table(), array('user_id'=>absint($user_id)), array('%d'));
+    }
+    karsabt_audit_log('customer_deleted', 'user', $user_id, 'حذف حساب کاربری؛ شاخص موبایل پاک‌سازی شد');
 }
 add_action('delete_user', 'karsabt_audit_deleted_user', 10, 3);
 
