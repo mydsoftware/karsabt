@@ -87,8 +87,21 @@ if (!is_wp_error($staffId) && !is_wp_error($customerId)) {
     delete_user_meta($customerId, '_karsabt_mobile');
     delete_user_meta($customerId, '_karsabt_mobile_verified');
 
+    $mobileBefore = '0912' . str_pad((string) random_int(0, 9999999), 7, '0', STR_PAD_LEFT);
+    $mobileAfter = '0913' . str_pad((string) random_int(0, 9999999), 7, '0', STR_PAD_LEFT);
+    $assert(true === karsabt_core_claim_mobile($mobileBefore, $customerId), 'شماره اولیه مشتری در ایندکس ثبت می‌شود');
+    $assert(true === karsabt_core_update_customer_mobile($mobileAfter, $customerId), 'تغییر شماره موبایل با تراکنش دیتابیس انجام می‌شود');
+    $assert(0 === karsabt_core_find_user_by_mobile($mobileBefore), 'شماره قبلی پس از تغییر دیگر به حساب متصل نیست');
+    $assert($customerId === karsabt_core_find_user_by_mobile($mobileAfter), 'شماره جدید به حساب مشتری متصل است');
+    $assert('0' === get_user_meta($customerId, '_karsabt_mobile_verified', true), 'تغییر شماره، تأیید قبلی را لغو می‌کند');
+    $assert(false === karsabt_core_update_customer_mobile($mobileAfter, $staffId), 'شماره متعلق به مشتری دیگر قابل تصاحب نیست');
+    $assert($customerId === karsabt_core_find_user_by_mobile($mobileAfter), 'مالک شماره پس از تلاش تعارض‌آمیز بدون تغییر باقی می‌ماند');
+
     $staff = new WP_User($staffId);
     $staff->set_role('karsabt_case_worker');
+    $assert(false === karsabt_core_is_customer_account($staff), 'حساب کارشناس از ورود عمومی OTP مشتری محروم است');
+    $customer = new WP_User($customerId);
+    $assert(true === karsabt_core_is_customer_account($customer), 'حساب subscriber مجاز به ورود مشتری با OTP است');
 
     $orderA = wp_insert_post(array(
         'post_type' => 'karsabt_order',
