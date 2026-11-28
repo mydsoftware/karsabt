@@ -2,7 +2,7 @@
 /**
  * Plugin Name: کارثبت | هسته سامانه
  * Description: مدیریت درخواست‌های خدمات کارثبت و فرم ثبت سفارش امن.
- * Version: 0.31.1
+ * Version: 0.31.2
  * Requires at least: 6.2
  * Requires PHP: 8.0
  * Author: Karsabt
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('KARSABT_CORE_VERSION', '0.31.1');
+define('KARSABT_CORE_VERSION', '0.31.2');
 
 function karsabt_core_enqueue_styles() {
     wp_enqueue_style('karsabt-core-forms', plugin_dir_url(__FILE__) . 'assets/css/forms.css', array(), KARSABT_CORE_VERSION);
