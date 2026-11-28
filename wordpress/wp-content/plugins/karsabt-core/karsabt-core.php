@@ -740,6 +740,7 @@ function karsabt_core_render_order_meta_box($post) {
     $history = is_array($history) ? $history : array();
     $notes = get_post_meta($post->ID, '_karsabt_internal_notes', true);
     $notes = is_array($notes) ? $notes : array();
+    $can_manage_notes = current_user_can('manage_options');
     ?>
     <table class="form-table">
         <tr><th>کد پیگیری</th><td><strong><?php echo esc_html($tracking_code ? $tracking_code : 'برای درخواست قدیمی ثبت نشده'); ?></strong></td></tr>
@@ -832,7 +833,7 @@ function karsabt_core_render_order_meta_box($post) {
             <?php endforeach; ?>
         </ol>
     <?php else : ?><p>فعالیتی ثبت نشده است.</p><?php endif; ?>
-    <?php if (current_user_can('manage_options')) : ?>
+    <?php if ($can_manage_notes) : ?>
     <hr>
     <h3>یادداشت‌های داخلی (فقط مدیران)</h3>
     <?php if ($notes) : ?>
