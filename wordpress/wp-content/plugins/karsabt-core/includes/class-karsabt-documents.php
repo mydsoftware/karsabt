@@ -31,18 +31,39 @@ function karsabt_docs_private_dir() {
     }
 
     $dir = untrailingslashit(wp_normalize_path($configured));
-    if (!wp_mkdir_p($dir) || !is_dir($dir) || !is_writable($dir)) {
+    $real_root = realpath(ABSPATH);
+    if (false === $real_root) {
+        return '';
+    }
+    $real_root = untrailingslashit(wp_normalize_path($real_root));
+
+    // مسیر را قبل از ساخت پوشه بررسی کن تا پیکربندی اشتباه، پوشه‌ای داخل web root نسازد.
+    $existing_dir = realpath($dir);
+    if (false !== $existing_dir) {
+        $candidate = untrailingslashit(wp_normalize_path($existing_dir));
+    } else {
+        $real_parent = realpath(dirname($dir));
+        if (false === $real_parent) {
+            return '';
+        }
+        $candidate = untrailingslashit(wp_normalize_path($real_parent . '/' . basename($dir)));
+    }
+    if ($candidate === $real_root || 0 === strpos($candidate . '/', $real_root . '/')) {
+        return '';
+    }
+
+    if (!is_dir($dir) && !wp_mkdir_p($dir)) {
+        return '';
+    }
+    if (!is_dir($dir) || !is_writable($dir)) {
         return '';
     }
 
     $real_dir = realpath($dir);
-    $real_root = realpath(ABSPATH);
-    if (false === $real_dir || false === $real_root) {
+    if (false === $real_dir) {
         return '';
     }
-
     $real_dir = untrailingslashit(wp_normalize_path($real_dir));
-    $real_root = untrailingslashit(wp_normalize_path($real_root));
     if ($real_dir === $real_root || 0 === strpos($real_dir . '/', $real_root . '/')) {
         return '';
     }
@@ -51,10 +72,6 @@ function karsabt_docs_private_dir() {
     return $real_dir;
 }
 
-/**
- * اعتبارسنجی محتوای واقعی فایل؛ پسوند و MIME ارسالی مرورگر قابل اعتماد نیست.
- * برای تصویرها، MIME، ساختار قابل‌خواندن و ابعاد محدود بررسی می‌شود.
- */
 function karsabt_docs_validate_file_content($path) {
     if (!is_string($path) || '' === $path || !is_file($path) || !is_readable($path)) {
         return false;
