@@ -100,6 +100,7 @@ karsabt_test('خطای ذخیره تلاش ناموفق OTP باعث حذف کد
 karsabt_test('دریافت مدارک فقط از مسیر کاربران واردشده', strpos($docs, "add_action('admin_post_nopriv_karsabt_document_download'") === false && strpos($docs, "add_action('admin_post_karsabt_document_download'") !== false);
 karsabt_test('کنترل مالکیت مشتری برای بارگذاری مدارک', strpos($docs, 'get_post_meta($order_id, \'_karsabt_customer_user_id\', true) !== get_current_user_id()') !== false);
 karsabt_test('ذخیره مدارک خارج از web root', strpos($docs, 'KARSABT_PRIVATE_UPLOAD_DIR') !== false && strpos($docs, 'realpath(ABSPATH)') !== false);
+karsabt_test('رد مسیر داخل web root پیش از ساخت پوشه مدارک', strpos($docs, '$candidate === $real_root') !== false && strpos($docs, '$candidate . \'/\', $real_root . \'/\'') !== false && strpos($docs, '$candidate === $real_root') < strpos($docs, 'wp_mkdir_p($dir)'));
 karsabt_test('اعتبارسنجی امضای PDF و ساختار واقعی تصویرها', strpos($docs, 'function karsabt_docs_validate_file_content') !== false && strpos($docs, "'%PDF-' === $signature") !== false && strpos($docs, 'getimagesize($path)') !== false);
 karsabt_test('محدودیت ابعاد و تعداد پیکسل تصویرهای ارسالی', strpos($docs, '$width > 12000') !== false && strpos($docs, '($width * $height) > 40000000') !== false);
 karsabt_test('مسیر بارگذاری فقط پس از اعتبارسنجی محتوای واقعی فایل ادامه می‌یابد', strpos($docs, '$mime = karsabt_docs_validate_file_content($file[\'tmp_name\'])') !== false);
