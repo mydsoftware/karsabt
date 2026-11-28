@@ -125,6 +125,12 @@ karsabt_test('قفل تراکنشی ثبت پرداخت هم‌زمان', strpos
 karsabt_test('جدول پرداخت‌ها با موتور تراکنشی InnoDB ساخته می‌شود', strpos($finance, 'ENGINE=InnoDB') !== false);
 karsabt_test('بازخوانی مبلغ فاکتور پس از قفل تراکنشی', strpos($finance, '_karsabt_invoice_amount') !== false && strpos($finance, '$fresh_paid = karsabt_finance_invoice_paid($invoice_id)') !== false);
 karsabt_test('نمایش فاکتور فقط به مالک حساب', strpos($finance, '_karsabt_invoice_customer_user_id') !== false && strpos($finance, '!== $user_id') !== false);
+karsabt_test('جلوگیری از تغییر وضعیت مختومه توسط کارشناس در لایه متا', strpos($core, "if ('rejected' === $meta_value && !current_user_can('manage_options'))") !== false);
+karsabt_test('جلوگیری از مختومه‌کردن پرونده از فرم ویرایش توسط کارشناس', strpos($core, "('rejected' !== $status || current_user_can('manage_options'))") !== false);
+karsabt_test('یادداشت داخلی فقط برای مدیر کل نمایش داده می‌شود', strpos($core, "if (current_user_can('manage_options')) : ?>\n    <hr>\n    <h3>یادداشت‌های داخلی (فقط مدیران)</h3>") !== false);
+karsabt_test('ثبت یادداشت داخلی فقط با مجوز مدیر کل', strpos($core, "current_user_can('manage_options') && isset($_POST['karsabt_internal_note'])") !== false);
+karsabt_test('وضعیت پرونده بدون فیلد ارسالی ناخواسته بازنویسی نمی‌شود', strpos($core, "$status = $old_status;") !== false && strpos($core, "if (isset($_POST['karsabt_order_status']))") !== false);
+karsabt_test('REST API عمومی برای نوع محتوای پرونده غیرفعال است', strpos($core, "'show_in_rest'        => false") !== false);
 
 
 
