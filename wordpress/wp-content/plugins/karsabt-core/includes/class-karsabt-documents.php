@@ -192,8 +192,9 @@ function karsabt_docs_upload_handler() {
         wp_die('دسترسی به این درخواست مجاز نیست.', '', array('response'=>403));
     }
     $rate_key = 'karsabt_docs_up_' . get_current_user_id();
-    $uploads = (int) get_transient($rate_key);
-    if ($uploads >= 10) { wp_die('سقف بارگذاری ساعتی تکمیل شده است.', '', array('response'=>429)); }
+    if (function_exists('karsabt_core_rate_limit_hit') && karsabt_core_rate_limit_hit($rate_key, 10, HOUR_IN_SECONDS)) {
+        wp_die('سقف بارگذاری ساعتی تکمیل شده است یا سرویس محدودیت درخواست موقتاً در دسترس نیست.', '', array('response'=>429));
+    }
     $dir = karsabt_docs_private_dir();
     if (!$dir || empty($_FILES['document']) || !isset($_FILES['document']['tmp_name'])) { wp_die('ذخیره‌سازی امن آماده نیست یا فایل ارسال نشده است.', '', array('response'=>400)); }
     $file = $_FILES['document'];
@@ -240,7 +241,6 @@ function karsabt_docs_upload_handler() {
         if (is_file($destination)) { @unlink($destination); }
         wp_die('ثبت اطلاعات مدرک انجام نشد؛ فایل ذخیره‌شده حذف شد.', '', array('response'=>500));
     }
-    set_transient($rate_key, $uploads + 1, HOUR_IN_SECONDS);
     wp_safe_redirect(wp_get_referer() ?: home_url('/')); exit;
 }
 add_action('admin_post_karsabt_document_upload', 'karsabt_docs_upload_handler');
@@ -262,6 +262,22 @@ function karsabt_docs_find($order_id, $document_id) {
     return array(null, $docs);
 }
 
+/**
+ * مدیر کل یا کارشناس مسئول پرونده اجازه مشاهده مدارک آن را دارد.
+ * مشتری فقط از مسیر پنل خودش و پس از تطبیق مالکیت مجاز است.
+ */
+function karsabt_docs_user_can_access_order($order_id, $user_id = 0) {
+    $order_id = absint($order_id);
+    $user_id = $user_id ? absint($user_id) : get_current_user_id();
+    if (!$order_id || !$user_id || 'karsabt_order' !== get_post_type($order_id)) {
+        return false;
+    }
+    if (user_can($user_id, 'manage_options')) {
+        return true;
+    }
+    return user_can($user_id, 'edit_post', $order_id);
+}
+
 function karsabt_docs_download_handler() {
     $order_id = isset($_REQUEST['order_id']) ? absint($_REQUEST['order_id']) : 0;
     $document_id = isset($_REQUEST['document_id']) ? sanitize_text_field(wp_unslash($_REQUEST['document_id'])) : '';
@@ -273,9 +289,9 @@ function karsabt_docs_download_handler() {
     if (!$order || 'karsabt_order' !== $order->post_type || 'private' !== $order->post_status) {
         wp_die('درخواست موردنظر پیدا نشد.', '', array('response'=>404));
     }
-    $is_admin = current_user_can('manage_options');
+    $staff_access = is_user_logged_in() && karsabt_docs_user_can_access_order($order_id);
     $owner = is_user_logged_in() && (int) get_post_meta($order_id, '_karsabt_customer_user_id', true) === get_current_user_id();
-    if (!$is_admin && !$owner) { wp_die('دسترسی مجاز نیست.', '', array('response'=>403)); }
+    if (!$staff_access && !$owner) { wp_die('دسترسی مجاز نیست.', '', array('response'=>403)); }
     list($doc,) = karsabt_docs_find($order_id, $document_id);
     $dir = karsabt_docs_private_dir();
     if (!$doc || !$dir || !preg_match('/^[a-f0-9]{32}\.(pdf|jpg|png)$/', $doc['file'] ?? '')) { wp_die('مدرک پیدا نشد.', '', array('response'=>404)); }
@@ -306,9 +322,11 @@ function karsabt_docs_download_handler() {
 add_action('admin_post_karsabt_document_download', 'karsabt_docs_download_handler');
 
 function karsabt_docs_admin_page() {
-    if (!current_user_can('manage_options')) { wp_die('دسترسی مجاز نیست.'); }
+    if (!current_user_can('edit_karsabt_orders')) { wp_die('دسترسی مجاز نیست.'); }
+    $can_review = current_user_can('manage_options');
     $notice = '';
     if (isset($_POST['karsabt_doc_review'])) {
+        if (!$can_review) { wp_die('فقط مدیر کل اجازه بررسی و تأیید مدارک را دارد.', '', array('response'=>403)); }
         check_admin_referer('karsabt_doc_review');
         $order_id = absint($_POST['order_id'] ?? 0);
         $document_id = sanitize_text_field(wp_unslash($_POST['document_id'] ?? ''));
@@ -347,7 +365,16 @@ function karsabt_docs_admin_page() {
             }
         }
     }
-    $orders = get_posts(array('post_type'=>'karsabt_order','post_status'=>'private','posts_per_page'=>200,'meta_key'=>'_karsabt_documents','orderby'=>'date','order'=>'DESC'));
+    $order_query = array('post_type'=>'karsabt_order','post_status'=>'private','posts_per_page'=>200,'meta_key'=>'_karsabt_documents','orderby'=>'date','order'=>'DESC');
+    if (!$can_review) {
+        $order_query['meta_query'] = array(array(
+            'key' => '_karsabt_assigned_user_id',
+            'value' => get_current_user_id(),
+            'compare' => '=',
+            'type' => 'NUMERIC',
+        ));
+    }
+    $orders = get_posts($order_query);
     echo '<div class="wrap"><h1>مدیریت مدارک مشتریان</h1>'.$notice;
     if (!karsabt_docs_private_dir()) { echo '<div class="notice notice-error"><p>مسیر خصوصی خارج از web root در wp-config.php تنظیم نشده است؛ دریافت فایل غیرفعال است.</p></div>'; }
     foreach ($orders as $order) {
@@ -357,7 +384,12 @@ function karsabt_docs_admin_page() {
             $name = get_post_meta($order->ID, '_karsabt_customer_name', true);
             $url = add_query_arg(array('action'=>'karsabt_document_download','order_id'=>$order->ID,'document_id'=>$doc['id'],'_wpnonce'=>wp_create_nonce('karsabt_document_download_'.$order->ID.'_'.$doc['id'])), admin_url('admin-post.php'));
             echo '<div class="card" style="max-width:900px;padding:12px;margin:12px 0"><p><strong>'.esc_html($name).'</strong> — '.esc_html($doc['name']).' — '.esc_html(karsabt_docs_categories()[$doc['category']] ?? 'سایر').'</p>';
-            echo '<p><a href="'.esc_url($url).'">دریافت امن فایل</a> | '.esc_html($doc['uploaded_at']).'</p><form method="post">';
+            echo '<p><a href="'.esc_url($url).'">دریافت امن فایل</a> | '.esc_html($doc['uploaded_at']).'</p>';
+            if (!$can_review) {
+                echo '</div>';
+                continue;
+            }
+            echo '<form method="post">';
             wp_nonce_field('karsabt_doc_review');
             echo '<input type="hidden" name="order_id" value="'.esc_attr($order->ID).'"><input type="hidden" name="document_id" value="'.esc_attr($doc['id']).'"><select name="status">';
             foreach (karsabt_docs_review_states() as $key=>$label) { echo '<option value="'.esc_attr($key).'" '.selected($doc['status'],$key,false).'>'.esc_html($label).'</option>'; }
@@ -367,7 +399,7 @@ function karsabt_docs_admin_page() {
     echo '</div>';
 }
 function karsabt_docs_admin_menu() {
-    add_submenu_page('edit.php?post_type=karsabt_order','مدارک مشتریان','مدارک مشتریان','manage_options','karsabt-documents','karsabt_docs_admin_page');
+    add_submenu_page('edit.php?post_type=karsabt_order','مدارک مشتریان','مدارک مشتریان','edit_karsabt_orders','karsabt-documents','karsabt_docs_admin_page');
     add_submenu_page('edit.php?post_type=karsabt_order','چک‌لیست مدارک','چک‌لیست مدارک','manage_options','karsabt-document-checklists','karsabt_docs_checklist_admin_page');
 }
 add_action('admin_menu','karsabt_docs_admin_menu');
