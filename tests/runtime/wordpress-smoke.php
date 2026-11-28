@@ -33,6 +33,8 @@ $assert(function_exists('karsabt_finance_table'), 'ماژول مالی بارگ�
 $assert(function_exists('karsabt_messages_lock'), 'قفل پیام‌ها در دسترس است');
 $assert(function_exists('karsabt_docs_lock'), 'قفل مدارک در دسترس است');
 $assert(function_exists('karsabt_core_rate_limit_hit'), 'محدودکننده اتمیک درخواست‌ها بارگذاری شده است');
+$assert(function_exists('karsabt_audit_log') && function_exists('karsabt_audit_table'), 'ماژول ممیزی رویدادهای حساس بارگذاری شده است');
+
 
 if (function_exists('karsabt_core_rate_limit_hit')) {
     $rateKey = 'karsabt_ci_rate_' . wp_generate_uuid4();
@@ -49,7 +51,21 @@ $tables = array(
     $wpdb->postmeta,
     karsabt_finance_table(),
     karsabt_core_mobile_index_table(),
+    karsabt_audit_table(),
 );
+
+$auditTestId = wp_rand(100000, 999999);
+if (function_exists('karsabt_audit_log')) {
+    $auditTable = karsabt_audit_table();
+    $auditBefore = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$auditTable}");
+    $auditWritten = karsabt_audit_log('document_uploaded', 'order', $auditTestId, 'آزمون ممیزی');
+    $auditRow = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$auditTable} WHERE object_id = %d AND event_type = %s ORDER BY id DESC LIMIT 1", $auditTestId, 'document_uploaded'));
+    $assert(true === $auditWritten && $auditRow && 'آزمون ممیزی' === $auditRow->detail, 'ثبت رویداد ممیزی در دیتابیس موفق است');
+    $assert($auditRow && !property_exists($auditRow, 'customer_phone') && !property_exists($auditRow, 'message_body'), 'ساختار لاگ ممیزی فاقد فیلد اطلاعات شخصی و متن پیام است');
+    if ($auditRow) { $wpdb->delete($auditTable, array('id'=>(int) $auditRow->id), array('%d')); }
+    $assert(false === karsabt_audit_log('raw_customer_data', 'user', $auditTestId, 'نباید ثبت شود'), 'رویداد خارج از فهرست مجاز ممیزی رد می‌شود');
+}
+
 foreach ($tables as $table) {
     $engine = $wpdb->get_var($wpdb->prepare(
         'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s',
