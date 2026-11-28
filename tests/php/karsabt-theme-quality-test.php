@@ -118,9 +118,11 @@ karsabt_test('ثبت‌نام فقط با نقش مشتری عادی', strpos($c
 $customer_order_path = $root . '/wordpress/wp-content/plugins/karsabt-core/includes/class-karsabt-customer-order.php';
 $messages_path = $root . '/wordpress/wp-content/plugins/karsabt-core/includes/class-karsabt-messages.php';
 $finance_path = $root . '/wordpress/wp-content/plugins/karsabt-core/includes/admin-finance.php';
+$audit_path = $root . '/wordpress/wp-content/plugins/karsabt-core/includes/class-karsabt-audit.php';
 $customer_order = is_file($customer_order_path) ? (string) file_get_contents($customer_order_path) : '';
 $messages = is_file($messages_path) ? (string) file_get_contents($messages_path) : '';
 $finance = is_file($finance_path) ? (string) file_get_contents($finance_path) : '';
+$audit = is_file($audit_path) ? (string) file_get_contents($audit_path) : '';
 
 karsabt_test('جلوگیری از مشاهده پرونده مشتری دیگر', strpos($customer_order, '_karsabt_customer_user_id') !== false && strpos($customer_order, '!== $user_id') !== false);
 karsabt_test('جلوگیری از ارسال پیام به پرونده مشتری دیگر', strpos($messages, '!== get_current_user_id()') !== false);
@@ -145,6 +147,18 @@ karsabt_test('یادداشت داخلی فقط برای مدیر کل نمایش
 karsabt_test('ثبت یادداشت داخلی فقط با مجوز مدیر کل', strpos($core, 'current_user_can(\'manage_options\') && isset($_POST[\'karsabt_internal_note\'])') !== false);
 karsabt_test('وضعیت پرونده بدون فیلد ارسالی ناخواسته بازنویسی نمی‌شود', strpos($core, '$status = $old_status;') !== false && strpos($core, 'if (isset($_POST[\'karsabt_order_status\']))') !== false);
 karsabt_test('REST API عمومی برای نوع محتوای پرونده غیرفعال است', strpos($core, "'show_in_rest'        => false") !== false);
+karsabt_test('ماژول ممیزی در هسته وردپرس بارگذاری می‌شود', strpos($core, "class-karsabt-audit.php") !== false && strpos($audit, 'function karsabt_audit_log') !== false);
+karsabt_test('جدول ممیزی با کلیدهای جست‌وجو و InnoDB ساخته می‌شود', strpos($audit, 'karsabt_audit_log') !== false && strpos($audit, 'KEY created_at') !== false && strpos($audit, 'dbDelta($sql)') !== false);
+karsabt_test('ثبت رویداد ممیزی فقط از فهرست رویدادهای مجاز انجام می‌شود', strpos($audit, "in_array($event, $allowed, true)") !== false);
+karsabt_test('گزارش ممیزی فقط برای مدیر کل قابل مشاهده است', strpos($audit, "add_submenu_page(") !== false && strpos($audit, "'manage_options'") !== false && strpos($audit, "current_user_can('manage_options')") !== false);
+karsabt_test('ممیزی از ذخیره IP خام خودداری و آن را HMAC می‌کند', strpos($audit, "hash_hmac('sha256', $ip, wp_salt('auth'))") !== false && strpos($audit, "'ip_hash'=>$ip_hash") !== false);
+karsabt_test('ممیزی محتوای پیام، مدارک و یادداشت مشتری را ذخیره نمی‌کند', strpos($audit, "'detail'=>sanitize_text_field($detail)") !== false && strpos($audit, "message_body") === false && strpos($audit, "customer_phone") === false);
+karsabt_test('سیاست نگهداری لاگ قابل تنظیم و محدود به بازه امن است', strpos($audit, 'KARSABT_AUDIT_RETENTION_DAYS') !== false && strpos($audit, 'max(30, min(3650') !== false && strpos($audit, 'karsabt_audit_daily_cleanup') !== false);
+karsabt_test('تغییرات وضعیت، مرحله و مسئول پرونده ثبت ممیزی می‌شوند', strpos($audit, 'added_post_meta') !== false && strpos($audit, 'updated_post_meta') !== false && strpos($audit, '_karsabt_order_status') !== false && strpos($audit, '_karsabt_assigned_user_id') !== false);
+karsabt_test('حذف پرونده و حساب کاربری در ممیزی ثبت می‌شود', strpos($audit, 'before_delete_post') !== false && strpos($audit, "add_action('delete_user'") !== false);
+karsabt_test('بارگذاری، دریافت و بررسی مدارک در ممیزی ثبت می‌شوند', strpos($docs, "karsabt_audit_log('document_uploaded'") !== false && strpos($docs, "karsabt_audit_log('document_downloaded'") !== false && strpos($docs, "karsabt_audit_log('document_reviewed'") !== false);
+karsabt_test('ثبت پرداخت و تغییر شماره مشتری در ممیزی ثبت می‌شوند', strpos($finance, "karsabt_audit_log('payment_created'") !== false && strpos($core, "karsabt_audit_log('mobile_changed'") !== false);
+
 
 
 
