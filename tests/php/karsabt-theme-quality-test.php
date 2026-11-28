@@ -203,9 +203,9 @@ $customer_admin = is_file($customers_path) ? (string) file_get_contents($custome
 karsabt_test('ماژول CRM وردپرس به پنل مشتریان متصل است', is_file($crm_path) && strpos($customer_admin, "class-karsabt-crm.php") !== false);
 karsabt_test('جدول فعالیت CRM با کلیدهای مشتری و زمان پیگیری ساخته می‌شود', strpos($crm, 'karsabt_customer_activities') !== false && strpos($crm, 'KEY customer_id') !== false && strpos($crm, 'KEY due_at') !== false && strpos($crm, 'dbDelta($sql)') !== false);
 karsabt_test('ثبت فعالیت CRM فقط برای مدیر و با nonce انجام می‌شود', strpos($crm, "current_user_can('manage_options')") !== false && strpos($crm, "check_admin_referer('karsabt_crm_add_activity')") !== false);
-karsabt_test('فعالیت فقط به حساب مشتری معتبر subscriber متصل می‌شود', strpos($crm, "in_array('subscriber', (array) $customer->roles, true)") !== false && strpos($crm, 'karsabt_crm_valid_customer($customer_id)') !== false);
-karsabt_test('انواع فعالیت و نتایج تماس با فهرست مجاز محدود شده‌اند', strpos($crm, "array('call', 'note', 'followup')") !== false && strpos($crm, "in_array($outcome, $outcomes, true)") !== false);
-karsabt_test('برای پیگیری زمان‌دار تعیین زمان یادآوری الزامی است', strpos($crm, "'followup' === $type && null === $due_at") !== false && strpos($crm, "type=\"datetime-local\"") !== false);
+karsabt_test('فعالیت فقط به حساب مشتری معتبر subscriber متصل می‌شود', strpos($crm, "in_array('subscriber', (array) \$customer->roles, true)") !== false && strpos($crm, 'karsabt_crm_valid_customer($customer_id)') !== false);
+karsabt_test('انواع فعالیت و نتایج تماس با فهرست مجاز محدود شده‌اند', strpos($crm, "array('call', 'note', 'followup')") !== false && strpos($crm, "in_array(\$outcome, \$outcomes, true)") !== false);
+karsabt_test('برای پیگیری زمان‌دار تعیین زمان یادآوری الزامی است', strpos($crm, "'followup' === \$type && null === \$due_at") !== false && strpos($crm, "type=\"datetime-local\"") !== false);
 karsabt_test('زمان یادآوری در UTC ذخیره و در منطقه زمانی وردپرس نمایش داده می‌شود', strpos($crm, "new DateTimeZone('UTC')") !== false && strpos($crm, 'get_date_from_gmt') !== false);
 karsabt_test('بستن پیگیری فقط برای فعالیت باز مجاز است', strpos($crm, "'completed_at' => null") !== false && strpos($crm, "'activity_type' => 'followup'") !== false);
 karsabt_test('شرح فعالیت با پاک‌سازی ورودی و محدودیت طول ذخیره می‌شود', strpos($crm, 'sanitize_textarea_field') !== false && strpos($crm, 'strlen($details) > 4000') !== false);
